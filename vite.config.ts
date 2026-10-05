@@ -15,9 +15,14 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://api.stalwartlc.com',
         changeOrigin: true,
         secure: false,
+      },
+      '/ws': {
+        target: 'ws://api.stalwartlc.com',
+        ws: true,
+        changeOrigin: true,
       },
     },
   },

@@ -7,6 +7,7 @@ const statusColors: Record<CaseStatus, { bg: string; text: string; label: string
   pending: { bg: "rgba(234,179,8,0.1)", text: "#eab308", label: "Pending" },
   closed: { bg: "rgba(107,114,128,0.1)", text: "#6b7280", label: "Closed" },
   on_hold: { bg: "rgba(239,68,68,0.1)", text: "#ef4444", label: "On Hold" },
+  archived: { bg: "rgba(168,85,247,0.12)", text: "#a855f7", label: "Archived" },
 };
 
 const LAWYER_NAME = "Chukwuemeka Stalwart";
@@ -267,7 +268,7 @@ function CaseDetail({ c, onBack, onAddUpdate, onStatusChange, onLogout }: {
             <div className="flex-shrink-0">
               <div className="text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Update Status</div>
               <div className="flex gap-2 flex-wrap">
-                {(["active", "pending", "on_hold", "closed"] as CaseStatus[]).map((s) => {
+                {(["active", "pending", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => {
                   const sc2 = statusColors[s];
                   return (
                     <button key={s} onClick={() => onStatusChange(c.id, s)}

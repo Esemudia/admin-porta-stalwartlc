@@ -217,7 +217,32 @@ export default function MatterWorkspace() {
                     </div>
                 </div>
                 {isAdmin && (
-                    <div className="relative z-10 mt-6 md:mt-0 flex gap-3">
+                    <div className="relative z-10 mt-6 md:mt-0 flex flex-wrap items-center gap-2.5">
+                        {matter.status !== 'archived' ? (
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm(`Archive "${matter.title}" into Cold Storage?`)) {
+                                        await updateMatter(matter._id || id, { status: 'archived' });
+                                        window.location.reload();
+                                    }
+                                }}
+                                className="px-4 py-2 bg-purple-600/90 hover:bg-purple-700 text-white font-semibold text-sm rounded shadow-sm transition-colors flex items-center gap-1.5"
+                                title="Archive this case into Cold Storage at any time"
+                            >
+                                <span>🗄️</span> Archive Case
+                            </button>
+                        ) : (
+                            <button
+                                onClick={async () => {
+                                    await updateMatter(matter._id || id, { status: 'active' });
+                                    window.location.reload();
+                                }}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm rounded shadow-sm transition-colors flex items-center gap-1.5"
+                                title="Restore case from archive to active status"
+                            >
+                                <span>↩️</span> Restore Case
+                            </button>
+                        )}
                         <button onClick={() => {
                             setMatterSettings({ title: matter.title || "", status: matter.status || "active" });
                             setIsEditingSettings(true);
@@ -230,6 +255,29 @@ export default function MatterWorkspace() {
                     <div className="text-[12rem] leading-none transform -translate-y-12 translate-x-12">⚖️</div>
                 </div>
             </div>
+
+            {/* Cold Archive Notice Banner */}
+            {matter.status === 'archived' && (
+                <div className="p-4 rounded-lg bg-purple-900/30 border border-purple-500/40 text-purple-200 text-sm flex items-center justify-between gap-4 shadow-sm animate-fade-in">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">🗄️</span>
+                        <div>
+                            <strong className="text-white font-serif">Cold Storage Archive:</strong> This legal matter is currently archived. All docket filings, evidentiary vaults, and billing records are sealed and preserved.
+                        </div>
+                    </div>
+                    {isAdmin && (
+                        <button
+                            onClick={async () => {
+                                await updateMatter(matter._id || id, { status: 'active' });
+                                window.location.reload();
+                            }}
+                            className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded shrink-0 transition-colors shadow"
+                        >
+                            Restore to Active
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Navigation Tabs */}
             <div className="flex space-x-1 bg-[var(--muted)]/50 p-1 rounded-lg overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
@@ -900,6 +948,46 @@ export default function MatterWorkspace() {
                     </div>
                 )
             }
+            {/* Matter Settings Editing Modal */}
+            {isEditingSettings && (
+                <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-[var(--card)] w-full max-w-md rounded-lg shadow-xl p-6 border border-[var(--border)] animate-fade-in">
+                        <h2 className="text-xl font-serif font-semibold mb-4 text-[var(--foreground)]">Edit Matter Settings</h2>
+                        <form onSubmit={handleUpdateMatterSettings} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Matter Title</label>
+                                <input
+                                    required
+                                    value={matterSettings.title}
+                                    onChange={e => setMatterSettings({ ...matterSettings, title: e.target.value })}
+                                    className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Lifecycle Status</label>
+                                <select
+                                    value={matterSettings.status}
+                                    onChange={e => setMatterSettings({ ...matterSettings, status: e.target.value })}
+                                    className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]"
+                                >
+                                    <option value="active">Active (Ongoing Proceedings)</option>
+                                    <option value="pending">Pending (Awaiting Allocation/Filing)</option>
+                                    <option value="on_hold">On Hold (Stay of Execution/Settlement)</option>
+                                    <option value="closed">Closed (Formally Concluded)</option>
+                                    <option value="archived">Archived (Digital Cold Storage)</option>
+                                </select>
+                            </div>
+                            <div className="p-3 bg-[var(--muted)]/40 rounded text-xs text-[var(--muted-foreground)] leading-relaxed">
+                                ℹ️ You can archive or unarchive this case at any time. Archiving preserves all documents, versions, and billing ledgers.
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button type="button" onClick={() => setIsEditingSettings(false)} className="px-4 py-2 border border-[var(--border)] text-[var(--foreground)] text-sm rounded hover:bg-[var(--muted)]">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-[var(--primary)] text-white text-sm rounded hover:brightness-110">Save Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

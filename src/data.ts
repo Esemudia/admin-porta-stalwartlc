@@ -1,4 +1,4 @@
-export type CaseStatus = "active" | "pending" | "closed" | "on_hold";
+export type CaseStatus = "active" | "pending" | "closed" | "on_hold" | "archived";
 export type InvoiceStatus = "paid" | "pending" | "overdue";
 export type StaffRole = "lawyer" | "front_desk" | "exec_secretary";
 export type DocType = "pleading" | "court_order" | "brief" | "correspondence" | "evidence" | "contract";

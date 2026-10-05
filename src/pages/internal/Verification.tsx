@@ -132,8 +132,8 @@ export default function Verification() {
         matterId: "",
         clientName: "",
         clientId: "",
-        signatoryName: "Babatunde Adeleke, SAN",
-        signatoryRole: "Senior Advocate of Nigeria / Managing Partner",
+        signatoryName: "Aghogho F. Okpako, Esq",
+        signatoryRole: "Legal Practitioner & Managing Partner",
         jurisdiction: "Federal High Court of Nigeria, Lagos Judicial Division",
         notes: "",
         hash: ""
@@ -268,8 +268,8 @@ export default function Verification() {
                 matterId: "",
                 clientName: "",
                 clientId: "",
-                signatoryName: "Babatunde Adeleke, SAN",
-                signatoryRole: "Senior Advocate of Nigeria / Managing Partner",
+                signatoryName: "Aghogho F. Okpako, Esq",
+                signatoryRole: "Legal Practitioner & Managing Partner",
                 jurisdiction: "Federal High Court of Nigeria, Lagos Judicial Division",
                 notes: "",
                 hash: ""
@@ -700,10 +700,10 @@ export default function Verification() {
                                             {/* Signatory */}
                                             <td className="py-3.5 px-4 whitespace-nowrap">
                                                 <div className="font-medium text-[var(--foreground)]">
-                                                    {r.signatoryName || "Babatunde Adeleke, SAN"}
+                                                    {r.signatoryName || "Aghogho F. Okpako, Esq"}
                                                 </div>
                                                 <div className="text-[10px] text-[var(--muted-foreground)]">
-                                                    {r.signatoryRole?.includes("SAN") ? "Senior Advocate of Nigeria" : r.signatoryRole || "Partner"}
+                                                    {r.signatoryRole || "Legal Practitioner & Managing Partner"}
                                                 </div>
                                             </td>
 
@@ -1149,7 +1149,7 @@ export default function Verification() {
                                         type="text"
                                         value={issueForm.signatoryName}
                                         onChange={(e) => setIssueForm({ ...issueForm, signatoryName: e.target.value })}
-                                        placeholder="e.g. Babatunde Adeleke, SAN"
+                                        placeholder="e.g. Aghogho F. Okpako, Esq"
                                         className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--foreground)] focus:outline-none"
                                     />
                                 </div>
@@ -1159,7 +1159,7 @@ export default function Verification() {
                                         type="text"
                                         value={issueForm.signatoryRole}
                                         onChange={(e) => setIssueForm({ ...issueForm, signatoryRole: e.target.value })}
-                                        placeholder="e.g. Senior Advocate of Nigeria / Managing Partner"
+                                        placeholder="e.g. Legal Practitioner & Managing Partner"
                                         className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--border)] rounded-md text-[var(--foreground)] focus:outline-none"
                                     />
                                 </div>
@@ -1345,10 +1345,10 @@ export default function Verification() {
                                 {/* Counsel Signature Block */}
                                 <div className="text-center sm:text-right border-t sm:border-t-0 sm:border-l sm:pl-6 border-neutral-300 pt-3 sm:pt-0">
                                     <div className="font-serif italic text-base font-bold text-[#0A192F]">
-                                        {certificateModalRecord.signatoryName || "Babatunde Adeleke, SAN"}
+                                        {certificateModalRecord.signatoryName || "Aghogho F. Okpako, Esq"}
                                     </div>
                                     <div className="text-[10px] font-sans text-neutral-600 font-semibold">
-                                        {certificateModalRecord.signatoryRole || "Senior Advocate of Nigeria / Managing Partner"}
+                                        {certificateModalRecord.signatoryRole || "Legal Practitioner & Managing Partner"}
                                     </div>
                                     <div className="text-[9px] font-sans text-neutral-500">
                                         Stalwart Law Consult Legal Practice

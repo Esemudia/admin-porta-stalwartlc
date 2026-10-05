@@ -15,7 +15,8 @@ export const navItems = [
     { id: "reports", label: "Reports", path: "/internal/reports", icon: "📉" },
     { id: "verification", label: "Verification", path: "/internal/verification", icon: "🛡️" },
     { id: "archive", label: "Archive", path: "/internal/archive", icon: "🗄️" },
-    { id: "administration", label: "Administration", path: "/internal/administration", icon: "⚙️" },
+    { id: "administration", label: "Administration", path: "/internal/administration", icon: "🏛️" },
+    { id: "settings", label: "Settings", path: "/internal/settings", icon: "⚙️" },
 ];
 
 export default function Shell() {
@@ -104,19 +105,38 @@ export default function Shell() {
 
                 {/* User Session & Role Indicator */}
                 <div className="p-4 border-t border-white/10 bg-black/20">
-                    <div className="flex items-center gap-3 mb-3 px-2">
-                        <div className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-[var(--primary)] font-bold text-xs ring-2 ring-white/20 shrink-0">
-                            {session?.name ? session.name.substring(0, 2).toUpperCase() : "U"}
+                    <Link
+                        to={canAccessNav(session?.role, "settings") ? "/internal/settings" : "#"}
+                        className={`flex items-center gap-3 mb-3 px-2 py-1.5 rounded-lg transition-colors group ${
+                            canAccessNav(session?.role, "settings") ? "hover:bg-white/10 cursor-pointer" : "cursor-default"
+                        }`}
+                        title={canAccessNav(session?.role, "settings") ? "Account & Profile Settings" : session?.name || "User"}
+                    >
+                        <div className="w-9 h-9 rounded-full bg-[var(--accent)] flex items-center justify-center text-[var(--primary)] font-bold text-xs ring-2 ring-white/20 shrink-0 overflow-hidden shadow-sm">
+                            {session?.avatarUrl ? (
+                                <img
+                                    src={session.avatarUrl}
+                                    alt={session.name}
+                                    className="w-full h-full object-cover rounded-full"
+                                />
+                            ) : (
+                                <span>{session?.name ? session.name.substring(0, 2).toUpperCase() : "U"}</span>
+                            )}
                         </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-white truncate">{session?.name || "User"}</span>
-                            <div className="flex items-center gap-1.5">
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-sm font-medium text-white truncate group-hover:text-[var(--accent)] transition-colors">
+                                {session?.name || "User"}
+                            </span>
+                            <div className="flex items-center justify-between">
                                 <span className="text-[11px] text-[var(--accent)] capitalize tracking-wide font-medium truncate">
                                     {roleFormatted}
                                 </span>
+                                {canAccessNav(session?.role, "settings") && (
+                                    <span className="text-[11px] opacity-40 group-hover:opacity-100 transition-opacity" title="Settings">⚙️</span>
+                                )}
                             </div>
                         </div>
-                    </div>
+                    </Link>
 
                     <div className="px-2 mb-3">
                         <div className="flex items-center justify-between text-[10px] text-white/50 font-mono">
@@ -127,12 +147,24 @@ export default function Shell() {
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleLogout}
-                        className="w-full py-2 text-xs border border-white/20 text-white/70 hover:text-white hover:bg-white/10 transition-colors rounded-md font-medium tracking-wide uppercase"
-                    >
-                        Sign out
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {canAccessNav(session?.role, "settings") && (
+                            <Link
+                                to="/internal/settings"
+                                className="py-2 px-3 text-xs border border-white/20 text-white/80 hover:text-white hover:bg-white/10 transition-colors rounded-md font-medium tracking-wide flex items-center justify-center gap-1.5"
+                                title="Practice & Profile Settings"
+                            >
+                                <span>⚙️</span>
+                                <span className="hidden sm:inline">Settings</span>
+                            </Link>
+                        )}
+                        <button
+                            onClick={handleLogout}
+                            className="flex-1 py-2 text-xs border border-white/20 text-white/70 hover:text-white hover:bg-white/10 transition-colors rounded-md font-medium tracking-wide uppercase"
+                        >
+                            Sign out
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -156,6 +188,15 @@ export default function Shell() {
                             <span className="w-2 h-2 rounded-full bg-emerald-500" />
                             <span className="capitalize">{roleFormatted}</span>
                         </div>
+                        {canAccessNav(session?.role, "settings") && (
+                            <Link
+                                to="/internal/settings"
+                                className="text-[var(--primary)] hover:opacity-70 p-2 rounded-full hover:bg-[var(--primary)]/5 transition-colors flex items-center justify-center text-sm"
+                                title="Settings & Profile"
+                            >
+                                ⚙️
+                            </Link>
+                        )}
                         <button className="text-[var(--primary)] hover:opacity-70 relative p-2 rounded-full hover:bg-[var(--primary)]/5 transition-colors" title="Notifications">
                             🔔
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>

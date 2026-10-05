@@ -440,6 +440,28 @@ export async function deleteCommunication(id: string) {
     if (!res.ok) throw new Error('Failed to delete message');
     return res.json();
 }
+export async function fetchChatChannels() {
+    const res = await fetch(`${API_BASE}/communications/chat/channels`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch chat channels');
+    return res.json();
+}
+export async function fetchChatMessages(roomId: string = 'chambers-general') {
+    const res = await fetch(`${API_BASE}/communications/chat/messages?roomId=${encodeURIComponent(roomId)}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch chat messages');
+    return res.json();
+}
+export async function sendChatMessage(data: any) {
+    const res = await fetch(`${API_BASE}/communications/chat/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to dispatch chat message');
+    }
+    return res.json();
+}
 export async function fetchVerificationRecords() { const res = await fetch(`${API_BASE}/verification`); if (!res.ok) throw new Error(); return res.json(); }
 export async function createVerificationRecord(data: any) {
     const res = await fetch(`${API_BASE}/verification`, {
@@ -487,3 +509,65 @@ export async function login(data: any) {
     if (!res.ok) throw new Error('Invalid credentials');
     return res.json();
 }
+
+export async function changeUserPassword(id: string, data: { currentPassword?: string; newPassword: string }) {
+    const res = await fetch(`${API_BASE}/users/${id}/change-password`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to update password');
+    }
+    return res.json();
+}
+
+export async function updateUserProfile(id: string, data: any) {
+    const res = await fetch(`${API_BASE}/users/${id}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to update profile');
+    }
+    return res.json();
+}
+
+export async function fetchFirmSettings() {
+    const res = await fetch(`${API_BASE}/users/settings/firm`, {
+        headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+        // Fallback to client-side defaults if needed
+        return {
+            firmName: 'Stalwart Law Consult',
+            tagline: 'Barristers, Solicitors & Legal Arbitrators',
+            email: 'contact@stalwartlc.com',
+            phone: '+234 1 234 5678',
+            address: 'Plot 12B, Admiralty Way, Lekki Phase 1, Lagos, Nigeria',
+            jurisdiction: 'Federal High Court & Appellate Courts of Nigeria',
+            currency: 'NGN',
+            cacNumber: 'RC-1049283',
+            taxId: 'TIN-92810382-0001',
+            logoUrl: ''
+        };
+    }
+    return res.json();
+}
+
+export async function updateFirmSettings(data: any) {
+    const res = await fetch(`${API_BASE}/users/settings/firm`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to update firm configuration');
+    }
+    return res.json();
+}
+

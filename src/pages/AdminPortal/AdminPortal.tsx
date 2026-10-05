@@ -18,6 +18,7 @@ const statusColors: Record<CaseStatus, { bg: string; text: string; label: string
   pending: { bg: "rgba(234,179,8,0.1)", text: "#eab308", label: "Pending" },
   closed: { bg: "rgba(107,114,128,0.1)", text: "#6b7280", label: "Closed" },
   on_hold: { bg: "rgba(239,68,68,0.1)", text: "#ef4444", label: "On Hold" },
+  archived: { bg: "rgba(168,85,247,0.12)", text: "#a855f7", label: "Archived" },
 };
 
 const invoiceColors: Record<string, { bg: string; text: string }> = {
@@ -200,8 +201,8 @@ export default function AdminPortal() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {(["active", "pending", "on_hold", "closed"] as CaseStatus[]).map((s) => {
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              {(["active", "pending", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => {
                 const sc = statusColors[s];
                 const count = cases.filter((c) => c.status === s).length;
                 return (
@@ -274,6 +275,7 @@ export default function AdminPortal() {
                         <option value="pending" style={{ background: "var(--card)", color: "#eab308" }}>Pending</option>
                         <option value="on_hold" style={{ background: "var(--card)", color: "#ef4444" }}>On Hold</option>
                         <option value="closed" style={{ background: "var(--card)", color: "#6b7280" }}>Closed</option>
+                        <option value="archived" style={{ background: "var(--card)", color: "#a855f7" }}>Archived</option>
                       </select>
                     </div>
                     <div className="col-span-2 flex items-center font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>{c.caseNumber}</div>
@@ -628,26 +630,48 @@ function CaseManager({
               {c.attorney} · {c.type} · Filed {c.filedDate}
             </p>
           </div>
-          <div className="flex-shrink-0">
-            <div className="text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Update Status</div>
-            <div className="flex gap-2 flex-wrap">
-              {(["active", "pending", "on_hold", "closed"] as CaseStatus[]).map((s) => {
-                const sc2 = statusColors[s];
-                return (
-                  <button
-                    key={s}
-                    onClick={() => onStatusChange(c.id, s)}
-                    className="text-xs px-3 py-1.5 font-mono transition-all"
-                    style={
-                      c.status === s
-                        ? { background: sc2.bg, color: sc2.text, border: `1px solid ${sc2.text}` }
-                        : { background: "var(--card)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
-                    }
-                  >
-                    {sc2.label}
-                  </button>
-                );
-              })}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {c.status !== "archived" ? (
+              <button
+                onClick={() => onStatusChange(c.id, "archived")}
+                className="px-4 py-2 text-xs font-mono font-bold rounded flex items-center gap-2 transition-all shadow-sm"
+                style={{ background: "rgba(168,85,247,0.15)", color: "#a855f7", border: "1px solid #a855f7" }}
+                title="Archive this case into Cold Storage at any time"
+              >
+                <span>🗄️</span> Archive Case
+              </button>
+            ) : (
+              <button
+                onClick={() => onStatusChange(c.id, "active")}
+                className="px-4 py-2 text-xs font-mono font-bold rounded flex items-center gap-2 transition-all shadow-sm"
+                style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", border: "1px solid #22c55e" }}
+                title="Restore this case from archive to active status"
+              >
+                <span>↩️</span> Restore Case
+              </button>
+            )}
+
+            <div>
+              <div className="text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Update Status</div>
+              <div className="flex gap-2 flex-wrap">
+                {(["active", "pending", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => {
+                  const sc2 = statusColors[s];
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => onStatusChange(c.id, s)}
+                      className="text-xs px-3 py-1.5 font-mono transition-all"
+                      style={
+                        c.status === s
+                          ? { background: sc2.bg, color: sc2.text, border: `1px solid ${sc2.text}` }
+                          : { background: "var(--card)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
+                      }
+                    >
+                      {sc2.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -889,7 +913,7 @@ function UploadCase({ onBack, onUpload, onLogout }: { onBack: () => void; onUplo
           <div className="grid lg:grid-cols-3 gap-5">
             {F("Initial Status", (
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as CaseStatus })} className={ic} style={is} onFocus={fo} onBlur={bl}>
-                {(["pending", "active", "on_hold", "closed"] as CaseStatus[]).map((s) => <option key={s} value={s}>{statusColors[s].label}</option>)}
+                {(["pending", "active", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => <option key={s} value={s}>{statusColors[s].label}</option>)}
               </select>
             ))}
             {F("Filed Date", <input type="date" value={form.filedDate} onChange={(e) => setForm({ ...form, filedDate: e.target.value })} className={ic} style={is} onFocus={fo} onBlur={bl} />)}

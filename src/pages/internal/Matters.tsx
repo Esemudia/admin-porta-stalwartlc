@@ -99,6 +99,15 @@ export default function Matters() {
         }
     };
 
+    const handleArchive = async (id: string, status: string) => {
+        try {
+            await updateMatter(id, { status });
+            setCasesList(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+        } catch (e) {
+            console.error("Failed to update status", e);
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-10">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -246,15 +255,39 @@ export default function Matters() {
                                 </div>
 
                                 <div className="col-span-1">
-                                    <span className={`text-xs px-2 py-1 rounded font-mono ${c.status === 'active' ? 'bg-green-100 text-green-700 border-green-200 border' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>
+                                    <span className={`text-xs px-2 py-1 rounded font-mono ${
+                                        c.status === 'active' ? 'bg-green-100 text-green-700 border-green-200 border' :
+                                        c.status === 'archived' ? 'bg-purple-100 text-purple-700 border-purple-200 border font-semibold' :
+                                        c.status === 'closed' ? 'bg-gray-100 text-gray-700 border-gray-200 border' :
+                                        'bg-amber-100 text-amber-700 border border-amber-200'
+                                    }`}>
                                         {c.status}
                                     </span>
                                 </div>
                                 <div className="col-span-1 font-mono text-xs text-[var(--muted-foreground)]">
                                     {c.nextHearing || "None"}
                                 </div>
-                                <div className="text-right space-x-3 text-xs flex justify-end">
-                                    <Link to={`/internal/matters/${c._id || c.id}`} className="px-3 py-1.5 border border-[var(--primary)] text-[var(--primary)] rounded font-medium hover:bg-[var(--primary)] hover:text-white transition-colors">
+                                <div className="text-right space-x-2 text-xs flex justify-end items-center">
+                                    {isAdmin && (
+                                        c.status !== 'archived' ? (
+                                            <button
+                                                onClick={() => handleArchive(c.id, 'archived')}
+                                                className="px-2 py-1 border border-purple-300 text-purple-700 hover:bg-purple-50 rounded transition-colors flex items-center gap-1"
+                                                title="Archive this matter to Cold Storage"
+                                            >
+                                                <span>🗄️</span> Archive
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleArchive(c.id, 'active')}
+                                                className="px-2 py-1 border border-green-300 text-green-700 hover:bg-green-50 rounded transition-colors flex items-center gap-1"
+                                                title="Restore matter back to Active status"
+                                            >
+                                                <span>↩️</span> Restore
+                                            </button>
+                                        )
+                                    )}
+                                    <Link to={`/internal/matters/${c._id || c.id}`} className="px-3 py-1 border border-[var(--primary)] text-[var(--primary)] rounded font-medium hover:bg-[var(--primary)] hover:text-white transition-colors">
                                         Workspace
                                     </Link>
                                 </div>

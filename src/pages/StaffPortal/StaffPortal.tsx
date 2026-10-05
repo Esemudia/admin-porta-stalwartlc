@@ -10,6 +10,7 @@ const statusColors: Record<CaseStatus, { bg: string; text: string; label: string
   pending: { bg: "rgba(234,179,8,0.1)", text: "#eab308", label: "Pending" },
   closed: { bg: "rgba(107,114,128,0.1)", text: "#6b7280", label: "Closed" },
   on_hold: { bg: "rgba(239,68,68,0.1)", text: "#ef4444", label: "On Hold" },
+  archived: { bg: "rgba(168,85,247,0.12)", text: "#a855f7", label: "Archived" },
 };
 
 const STAFF_INFO: Record<string, { name: string; email: string; color: string; colorText: string; label: string }> = {
@@ -116,8 +117,8 @@ export default function StaffPortal() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {(["active", "pending", "on_hold", "closed"] as CaseStatus[]).map((s) => {
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          {(["active", "pending", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => {
             const sc = statusColors[s];
             const count = cases.filter(c => c.status === s).length;
             return (
@@ -180,6 +181,7 @@ export default function StaffPortal() {
                           <option value="pending" style={{ background: "var(--card)", color: "#eab308" }}>Pending</option>
                           <option value="on_hold" style={{ background: "var(--card)", color: "#ef4444" }}>On Hold</option>
                           <option value="closed" style={{ background: "var(--card)", color: "#6b7280" }}>Closed</option>
+                          <option value="archived" style={{ background: "var(--card)", color: "#a855f7" }}>Archived</option>
                         </select>
                         <span className="text-xs px-2 py-0.5" style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}>{c.type}</span>
                       </div>

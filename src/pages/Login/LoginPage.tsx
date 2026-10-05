@@ -47,14 +47,6 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
-
-  const handleQuickSelect = (acc: typeof DEMO_ACCOUNTS[0]) => {
-    setEmail(acc.email);
-    setPassword("stalwart2026");
-    setError("");
-    setSelectedDemo(acc.email);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,39 +223,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Quick Fill Preset Accounts for Quick Testing */}
-          <div className="mb-6 p-3.5 rounded-xl bg-slate-900/80 border border-white/10 backdrop-blur-md">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
-                Quick Demo Presets
-              </span>
-              <span className="text-[11px] text-[#D5AA6D]/80 font-light">
-                Click any persona to autofill
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {DEMO_ACCOUNTS.map((acc) => {
-                const isSelected = selectedDemo === acc.email;
-                return (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => handleQuickSelect(acc)}
-                    className={`text-left p-2 rounded-lg border text-xs transition-all ${
-                      isSelected
-                        ? "bg-[#D5AA6D] text-[#001026] border-[#D5AA6D] font-bold shadow-md shadow-[#D5AA6D]/20"
-                        : "bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 border-white/10"
-                    }`}
-                  >
-                    <div className="truncate font-medium">{acc.name.split(" ")[0]}</div>
-                    <div className={`text-[10px] truncate ${isSelected ? "text-[#001026]/80" : "text-slate-400"}`}>
-                      {acc.title}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+
 
           {/* Error Banner */}
           {error && (
@@ -315,7 +275,7 @@ export default function LoginPage() {
                 </label>
                 <button
                   type="button"
-                  onClick={() => alert("For this demonstration, use password 'stalwart2026' or click any of the Quick Demo Presets.")}
+                  onClick={() => alert("Please contact your firm administrator at admin@stalwartlc.com to reset your credentials.")}
                   className="text-xs text-[#D5AA6D] hover:underline font-light"
                 >
                   Forgot password?

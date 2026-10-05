@@ -16,6 +16,7 @@ import Reports from "./pages/internal/Reports";
 import Verification from "./pages/internal/Verification";
 import Archive from "./pages/internal/Archive";
 import Administration from "./pages/internal/Administration";
+import Settings from "./pages/internal/Settings";
 import AdminPortal from "./pages/AdminPortal/AdminPortal";
 import StaffPortal from "./pages/StaffPortal/StaffPortal";
 import SuperAdminPortal from "./pages/SuperAdminPortal/SuperAdminPortal";
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="verification" element={<Verification />} />
           <Route path="archive" element={<Archive />} />
           <Route path="administration" element={<Administration />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Dedicated Individual Portals */}

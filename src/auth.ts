@@ -16,6 +16,14 @@ export interface AuthSession {
     email: string;
     token?: string;
     userId?: string;
+    avatarUrl?: string;
+    phone?: string;
+    title?: string;
+    department?: string;
+    firstName?: string;
+    lastName?: string;
+    barNumber?: string;
+    bio?: string;
 }
 
 const SESSION_KEY = "slc_session";
@@ -61,6 +69,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
         "verification",
         "archive",
         "administration",
+        "settings",
     ],
     lawyer: [
         "dashboard",
@@ -71,6 +80,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
         "calendar",
         "communications",
         "verification",
+        "settings",
     ],
     exec_secretary: [
         "dashboard",
@@ -82,6 +92,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
         "communications",
         "archive",
         "administration",
+        "settings",
     ],
     front_desk: [
         "dashboard",
@@ -89,6 +100,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
         "tasks",
         "calendar",
         "communications",
+        "settings",
     ],
     client: [
         "dashboard",
@@ -128,12 +140,19 @@ export function getAllRolePermissions(): Record<UserRole, string[]> {
         if (raw) {
             const parsed = JSON.parse(raw);
             if (parsed && typeof parsed === "object") {
+                const ensureStaffSettings = (list: any[], fallback: string[]) => {
+                    const arr = Array.isArray(list) ? [...list] : [...fallback];
+                    if (!arr.includes("settings")) arr.push("settings");
+                    return arr;
+                };
+
                 return {
-                    super_admin: Array.isArray(parsed.super_admin) ? parsed.super_admin : DEFAULT_ROLE_PERMISSIONS.super_admin,
-                    lawyer: Array.isArray(parsed.lawyer) ? parsed.lawyer : DEFAULT_ROLE_PERMISSIONS.lawyer,
-                    exec_secretary: Array.isArray(parsed.exec_secretary) ? parsed.exec_secretary : DEFAULT_ROLE_PERMISSIONS.exec_secretary,
-                    front_desk: Array.isArray(parsed.front_desk) ? parsed.front_desk : DEFAULT_ROLE_PERMISSIONS.front_desk,
-                    client: Array.isArray(parsed.client) ? parsed.client : DEFAULT_ROLE_PERMISSIONS.client,
+                    super_admin: ensureStaffSettings(parsed.super_admin, DEFAULT_ROLE_PERMISSIONS.super_admin),
+                    lawyer: ensureStaffSettings(parsed.lawyer, DEFAULT_ROLE_PERMISSIONS.lawyer),
+                    exec_secretary: ensureStaffSettings(parsed.exec_secretary, DEFAULT_ROLE_PERMISSIONS.exec_secretary),
+                    front_desk: ensureStaffSettings(parsed.front_desk, DEFAULT_ROLE_PERMISSIONS.front_desk),
+                    // Client MUST NEVER have settings
+                    client: Array.isArray(parsed.client) ? parsed.client.filter((x: string) => x !== "settings") : DEFAULT_ROLE_PERMISSIONS.client,
                 };
             }
         }

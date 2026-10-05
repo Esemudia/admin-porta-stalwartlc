@@ -9,6 +9,7 @@ const statusColors: Record<CaseStatus, { bg: string; text: string; label: string
   pending: { bg: "rgba(234,179,8,0.1)", text: "#eab308", label: "Pending" },
   closed: { bg: "rgba(107,114,128,0.1)", text: "#6b7280", label: "Closed" },
   on_hold: { bg: "rgba(239,68,68,0.1)", text: "#ef4444", label: "On Hold" },
+  archived: { bg: "rgba(168,85,247,0.12)", text: "#a855f7", label: "Archived" },
 };
 
 const roleColors: Record<StaffRole, { bg: string; text: string; label: string }> = {
@@ -175,10 +176,11 @@ export default function SuperAdminPortal() {
                 </p>
 
                 {/* KPI grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
                   {[
                     { label: "Total Cases", value: cases.length, accent: false },
                     { label: "Active Cases", value: cases.filter(c => c.status === "active").length, accent: true },
+                    { label: "Archived Cases", value: cases.filter(c => c.status === "archived").length, accent: false },
                     { label: "Lawyers", value: lawyers.length, accent: false },
                     { label: "Support Staff", value: support.length, accent: false },
                   ].map((k) => (
@@ -198,7 +200,7 @@ export default function SuperAdminPortal() {
                       Case Status Breakdown
                     </h2>
                     <div className="space-y-2">
-                      {(["active", "pending", "on_hold", "closed"] as CaseStatus[]).map((s) => {
+                      {(["active", "pending", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => {
                         const sc = statusColors[s];
                         const count = cases.filter(c => c.status === s).length;
                         const pct = cases.length ? Math.round((count / cases.length) * 100) : 0;
@@ -324,8 +326,8 @@ export default function SuperAdminPortal() {
                   {cases.length} matters across all attorneys
                 </p>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                  {(["active", "pending", "on_hold", "closed"] as CaseStatus[]).map((s) => {
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+                  {(["active", "pending", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => {
                     const sc = statusColors[s];
                     return (
                       <div key={s} className="p-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
@@ -345,33 +347,61 @@ export default function SuperAdminPortal() {
                     <div className="col-span-2">Case No.</div>
                     <div className="col-span-3">Title</div>
                     <div className="col-span-2">Attorney</div>
-                    <div className="col-span-2">Uploaded By</div>
+                    <div className="col-span-1">Uploaded By</div>
                     <div className="col-span-2">Next Hearing</div>
+                    <div className="col-span-1 text-right">Quick Action</div>
                   </div>
                   {cases.map((c, i) => {
                     const sc = statusColors[c.status];
                     return (
-                      <button key={c.id} onClick={() => setViewCase(c)}
-                        className="w-full text-left flex flex-col lg:grid lg:grid-cols-12 gap-2 lg:gap-3 px-5 py-4 transition-colors"
+                      <div key={c.id}
+                        className="w-full text-left flex flex-col lg:grid lg:grid-cols-12 gap-2 lg:gap-3 px-5 py-4 transition-colors items-center"
                         style={{ borderBottom: i < cases.length - 1 ? "1px solid var(--border)" : "none", background: "var(--background)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--card)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "var(--background)")}>
-                        <div className="col-span-1 flex items-center">
+                        <div className="col-span-1 flex items-center cursor-pointer" onClick={() => setViewCase(c)}>
                           <span className="text-xs px-2 py-0.5 font-mono" style={{ background: sc.bg, color: sc.text }}>{sc.label}</span>
                         </div>
-                        <div className="col-span-2 flex items-center font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>{c.caseNumber}</div>
-                        <div className="col-span-3 flex items-center">
+                        <div className="col-span-2 flex items-center font-mono text-xs cursor-pointer" style={{ color: "var(--muted-foreground)" }} onClick={() => setViewCase(c)}>{c.caseNumber}</div>
+                        <div className="col-span-3 flex items-center cursor-pointer" onClick={() => setViewCase(c)}>
                           <div>
                             <div className="font-serif text-sm font-semibold" style={{ color: "var(--foreground)" }}>{c.title}</div>
                             <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{c.type}</div>
                           </div>
                         </div>
-                        <div className="col-span-2 flex items-center text-xs" style={{ color: "var(--muted-foreground)" }}>{c.attorney}</div>
-                        <div className="col-span-2 flex items-center text-xs" style={{ color: "var(--muted-foreground)" }}>{c.uploadedBy}</div>
-                        <div className="col-span-2 flex items-center text-xs" style={{ color: c.nextHearing ? "var(--primary)" : "var(--muted-foreground)" }}>
+                        <div className="col-span-2 flex items-center text-xs cursor-pointer" style={{ color: "var(--muted-foreground)" }} onClick={() => setViewCase(c)}>{c.attorney}</div>
+                        <div className="col-span-1 flex items-center text-xs cursor-pointer" style={{ color: "var(--muted-foreground)" }} onClick={() => setViewCase(c)}>{c.uploadedBy}</div>
+                        <div className="col-span-2 flex items-center text-xs cursor-pointer" style={{ color: c.nextHearing ? "var(--primary)" : "var(--muted-foreground)" }} onClick={() => setViewCase(c)}>
                           {c.nextHearing ?? "—"}
                         </div>
-                      </button>
+                        <div className="col-span-1 flex items-center justify-end">
+                          {c.status !== "archived" ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(c.id, "archived");
+                              }}
+                              className="px-2 py-1 text-[11px] font-mono rounded transition-colors"
+                              style={{ border: "1px solid rgba(168,85,247,0.4)", color: "#a855f7" }}
+                              title="Archive case at any time"
+                            >
+                              Archive
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(c.id, "active");
+                              }}
+                              className="px-2 py-1 text-[11px] font-mono rounded transition-colors"
+                              style={{ border: "1px solid rgba(34,197,94,0.4)", color: "#22c55e" }}
+                              title="Restore archived case"
+                            >
+                              Restore
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -554,21 +584,43 @@ function AdminCaseDetail({ c, onBack, onStatusChange }: { c: Case; onBack: () =>
             {c.attorney} · {c.type} · Filed {c.filedDate} · Uploaded by {c.uploadedBy}
           </p>
         </div>
-        <div>
-          <div className="text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Change Status</div>
-          <div className="flex gap-2 flex-wrap">
-            {(["active", "pending", "on_hold", "closed"] as CaseStatus[]).map((s) => {
-              const sc2 = statusColors[s];
-              return (
-                <button key={s} onClick={() => onStatusChange(c.id, s)}
-                  className="text-xs px-3 py-1.5 font-mono"
-                  style={c.status === s
-                    ? { background: sc2.bg, color: sc2.text, border: `1px solid ${sc2.text}` }
-                    : { background: "var(--card)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}>
-                  {sc2.label}
-                </button>
-              );
-            })}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          {c.status !== "archived" ? (
+            <button
+              onClick={() => onStatusChange(c.id, "archived")}
+              className="px-4 py-2 text-xs font-mono font-bold rounded flex items-center gap-2 transition-all shadow-sm"
+              style={{ background: "rgba(168,85,247,0.15)", color: "#a855f7", border: "1px solid #a855f7" }}
+              title="Archive this case into Cold Storage at any time"
+            >
+              <span>🗄️</span> Archive Case
+            </button>
+          ) : (
+            <button
+              onClick={() => onStatusChange(c.id, "active")}
+              className="px-4 py-2 text-xs font-mono font-bold rounded flex items-center gap-2 transition-all shadow-sm"
+              style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", border: "1px solid #22c55e" }}
+              title="Restore this case from archive to active status"
+            >
+              <span>↩️</span> Restore Case
+            </button>
+          )}
+
+          <div>
+            <div className="text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Change Status</div>
+            <div className="flex gap-2 flex-wrap">
+              {(["active", "pending", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => {
+                const sc2 = statusColors[s];
+                return (
+                  <button key={s} onClick={() => onStatusChange(c.id, s)}
+                    className="text-xs px-3 py-1.5 font-mono transition-all"
+                    style={c.status === s
+                      ? { background: sc2.bg, color: sc2.text, border: `1px solid ${sc2.text}` }
+                      : { background: "var(--card)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}>
+                    {sc2.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
