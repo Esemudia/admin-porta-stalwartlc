@@ -1,6 +1,12 @@
 import { getSession } from './auth';
 
-export const API_BASE = '/api/v1';
+// In production on Vercel, default to the live backend URL unless overridden by VITE_API_URL.
+// In local dev, default to empty string so requests hit the local Vite dev proxy.
+const BACKEND_BASE = import.meta.env.VITE_API_URL !== undefined 
+    ? import.meta.env.VITE_API_URL 
+    : (import.meta.env.PROD ? 'https://api.stalwartlc.com' : '');
+
+export const API_BASE = `${BACKEND_BASE}/api/v1`;
 
 export function getAuthHeaders(extra?: Record<string, string>): Record<string, string> {
     const session = getSession();
