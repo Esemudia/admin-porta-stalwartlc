@@ -337,6 +337,11 @@ export default function AdminPortal() {
                 <div className="col-span-1 text-right">Billed</div>
                 <div className="col-span-1 text-right">Owed</div>
               </div>
+              {clients.length === 0 && (
+                <div className="py-16 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
+                  No clients registered yet.
+                </div>
+              )}
               {clients.map((cl: Client, idx) => (
                 <div
                   key={cl.id}
@@ -370,8 +375,9 @@ export default function AdminPortal() {
             </div>
 
             {/* Per-client case breakdown */}
-            <div className="mt-8">
-              <h2 className="font-serif text-xl font-semibold mb-4" style={{ color: "var(--foreground)" }}>Case Breakdown by Client</h2>
+            {clients.length > 0 && (
+              <div className="mt-8">
+                <h2 className="font-serif text-xl font-semibold mb-4" style={{ color: "var(--foreground)" }}>Case Breakdown by Client</h2>
               {clients.map((cl) => {
                 const clientCases = cases.filter((c) => c.clientId === cl.id);
                 if (clientCases.length === 0) return null;
@@ -398,7 +404,8 @@ export default function AdminPortal() {
                   </div>
                 );
               })}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -440,13 +447,13 @@ export default function AdminPortal() {
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>COLLECTION RATE</span>
                 <span className="font-serif text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                  {Math.round((totalPaid / totalRevenue) * 100)}%
+                  {totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0}%
                 </span>
               </div>
               <div className="h-2 w-full" style={{ background: "var(--secondary)" }}>
                 <div
                   className="h-2 transition-all"
-                  style={{ width: `${Math.round((totalPaid / totalRevenue) * 100)}%`, background: "#22c55e" }}
+                  style={{ width: `${totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0}%`, background: "#22c55e" }}
                 />
               </div>
             </div>
@@ -466,6 +473,11 @@ export default function AdminPortal() {
                 <div className="col-span-1">Due</div>
                 <div className="col-span-1 text-right">Amount</div>
               </div>
+              {invoices.length === 0 && (
+                <div className="py-16 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
+                  No invoices issued yet.
+                </div>
+              )}
               {invoices.map((inv, idx) => {
                 const ic = invoiceColors[inv.status];
                 const relCase = cases.find((c) => c.id === inv.caseId);
@@ -503,6 +515,11 @@ export default function AdminPortal() {
               <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>{staffMembers.length} staff members</p>
             </div>
             <div className="grid lg:grid-cols-3 gap-5">
+              {staffMembers.length === 0 && (
+                <div className="py-16 text-center text-sm col-span-3" style={{ color: "var(--muted-foreground)" }}>
+                  No staff members registered yet.
+                </div>
+              )}
               {staffMembers.map((s) => {
                 const roleLabel: Record<string, string> = {
                   lawyer: "Lawyer",

@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { fetchClients, createClient } from "../../api";
+import { getSession } from "../../auth";
 
 export default function ClientList() {
+    const session = getSession();
+    const isLawyer = session?.role === "lawyer";
+    const canAddClient = session?.role !== "lawyer";
+
     const [searchTerm, setSearchTerm] = useState("");
     const [clientsList, setClientsList] = useState<any[]>([]);
     const [isAdding, setIsAdding] = useState(false);
@@ -38,6 +43,11 @@ export default function ClientList() {
 
     const handleAddClient = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLawyer) {
+            alert("Lawyers do not have permission to register new clients. Please contact firm administration or front desk.");
+            return;
+        }
+
         try {
             const payload: any = {
                 clientNumber: `STW-CL-00${clientsList.length + 10}`,
@@ -59,10 +69,14 @@ export default function ClientList() {
                 payload.lastName = formData.lastName;
             }
 
-            await createClient(payload);
+            const res = await createClient(payload);
+            if (res && (res.error || (res.statusCode && res.statusCode >= 400))) {
+                throw new Error(res.message || res.error || "Failed to create client");
+            }
             window.location.reload();
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+            alert(e?.message || "Failed to create client.");
         }
     };
 
@@ -70,15 +84,29 @@ export default function ClientList() {
         <div className="max-w-7xl mx-auto space-y-6 pb-10 relative">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="font-serif text-3xl font-semibold text-[var(--foreground)]">Clients</h1>
-                    <p className="text-sm text-[var(--muted-foreground)] mt-1">Manage all firm individuals and corporate clients.</p>
+                    <div className="flex items-center gap-3">
+                        <h1 className="font-serif text-3xl font-semibold text-[var(--foreground)]">Clients</h1>
+                        {isLawyer && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                Read Only
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-sm text-[var(--muted-foreground)] mt-1">
+                        {isLawyer
+                            ? "View firm individual and corporate clients associated with matters."
+                            : "Manage all firm individuals and corporate clients."}
+                    </p>
                 </div>
-                <button
-                    onClick={() => setIsAdding(true)}
-                    className="px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded shadow-sm hover:brightness-110 transition-all"
-                >
-                    + New Client
-                </button>
+                {canAddClient && (
+                    <button
+                        onClick={() => setIsAdding(true)}
+                        className="px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded shadow-sm hover:brightness-110 transition-all"
+                    >
+                        + New Client
+                    </button>
+                )}
             </div>
 
             {/* Modal */}

@@ -69,6 +69,8 @@ export default function Dashboard() {
     const canCalendar = canAccessNav(session?.role, "calendar");
     const canTasks = canAccessNav(session?.role, "tasks");
     const canVerification = canAccessNav(session?.role, "verification");
+    const canCreateClient = canClients && session?.role !== "lawyer";
+    const canCreateMatter = canMatters && (session?.role === "super_admin" || session?.role === "exec_secretary");
 
     useEffect(() => {
         let isMounted = true;
@@ -287,7 +289,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {canMatters && (
+                    {canCreateMatter && (
                         <button
                             onClick={() => navigate('/internal/matters')}
                             className="px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded shadow-sm hover:brightness-110 transition-all flex items-center gap-1.5"
@@ -295,7 +297,7 @@ export default function Dashboard() {
                             <span>+</span> New Matter
                         </button>
                     )}
-                    {canClients && (
+                    {canCreateClient && (
                         <button
                             onClick={() => navigate('/internal/clients')}
                             className="px-4 py-2 bg-[var(--secondary)] text-[var(--secondary-foreground)] text-sm font-medium rounded shadow-sm hover:brightness-95 transition-all flex items-center gap-1.5"

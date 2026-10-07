@@ -149,7 +149,7 @@ export default function Administration() {
             role: "lawyer",
             label: "Lawyer / Associate",
             badgeColor: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
-            description: "Litigation partners, associates, and legal counsel. Access to active matters, documents, court hearings, legal tasks, and document verification. Billing and executive reports are hidden.",
+            description: "Litigation partners, associates, and legal counsel. Access to assigned matters, documents, court hearings, legal tasks, and document verification. Client registration, financial billing, and executive reports are restricted.",
         },
         {
             role: "exec_secretary",

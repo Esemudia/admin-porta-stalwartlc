@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { clearSession } from "../../auth";
+import { getSession, clearSession } from "../../auth";
 import { fetchMatters, fetchDocuments, uploadDocument } from "../../api";
 import logo from "../../assets/logo.png";
 
@@ -9,6 +9,7 @@ const fmtTs = (ts: string) => new Date(ts).toLocaleString("en-GB", { day: "numer
 
 export default function ClientPortal() {
   const navigate = useNavigate();
+  const session = getSession();
   const [tab, setTab] = useState("overview");
 
   // Real API State
@@ -76,8 +77,8 @@ export default function ClientPortal() {
         </div>
         <div className="flex items-center gap-4">
           <div className="hidden lg:flex flex-col items-end">
-            <span className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>Emmanuel Okafor</span>
-            <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>e.okafor@company.com</span>
+            <span className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>{session?.name || "Client Portal"}</span>
+            {session?.email && <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{session.email}</span>}
           </div>
           <button onClick={() => { clearSession(); navigate("/login"); }}
             className="text-xs px-3 py-1.5 transition-colors hover:border-[var(--primary)]"
@@ -106,7 +107,9 @@ export default function ClientPortal() {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div>
-            <h1 className="font-serif text-3xl font-semibold mb-6">Good morning, Emmanuel</h1>
+            <h1 className="font-serif text-3xl font-semibold mb-6">
+              Welcome, {session?.name?.split(" ")[0] || "Client"}
+            </h1>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="p-5 bg-[var(--card)] border border-[var(--border)]">
                 <div className="text-xs font-mono text-[var(--muted-foreground)] mb-3">Active Cases</div>
@@ -120,6 +123,11 @@ export default function ClientPortal() {
 
             <h2 className="font-serif text-xl font-semibold mb-4">Active Matters</h2>
             <div className="space-y-3">
+              {cases.length === 0 && (
+                <div className="p-8 text-center text-sm border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]">
+                  No active matters assigned to this account yet.
+                </div>
+              )}
               {cases.map((c) => (
                 <div key={c._id} className="p-4 bg-[var(--card)] border border-[var(--border)]">
                   <div className="font-mono text-xs text-[var(--muted-foreground)] mb-1">Matter Reference: {c._id.slice(0, 8).toUpperCase()}</div>
@@ -169,24 +177,30 @@ export default function ClientPortal() {
         {tab === "documents" && (
           <div>
             <h1 className="font-serif text-3xl font-semibold mb-6">Client Document Vault</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {documents.map(d => (
-                <div key={d._id} className="p-5 bg-[var(--card)] border border-[var(--border)] flex flex-col justify-between shadow-sm rounded-lg hover:border-[var(--primary)] transition-all">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2 text-[var(--foreground)]">
-                      <span className="text-2xl text-[var(--primary)]">📄</span>
-                      <span className="font-serif font-semibold text-base">{d.name}</span>
+            {documents.length === 0 ? (
+              <div className="p-8 text-center text-sm border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]">
+                No documents found in your vault.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {documents.map(d => (
+                  <div key={d._id} className="p-5 bg-[var(--card)] border border-[var(--border)] flex flex-col justify-between shadow-sm rounded-lg hover:border-[var(--primary)] transition-all">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 text-[var(--foreground)]">
+                        <span className="text-2xl text-[var(--primary)]">📄</span>
+                        <span className="font-serif font-semibold text-base">{d.name}</span>
+                      </div>
+                      <div className="font-mono text-[11px] text-[var(--muted-foreground)] mb-4">{d.documentNumber} • {d.category}</div>
                     </div>
-                    <div className="font-mono text-[11px] text-[var(--muted-foreground)] mb-4">{d.documentNumber} • {d.category}</div>
+                    {d.fileUrl ? (
+                      <a href={d.fileUrl} target="_blank" rel="noreferrer" download className="text-center block w-full bg-[var(--primary)] text-white py-2 text-xs font-medium rounded hover:brightness-110 shadow-sm transition-all">
+                        Download File
+                      </a>
+                    ) : <span className="block w-full text-center py-2 text-xs text-[var(--muted-foreground)] bg-[var(--muted)] rounded border border-[var(--border)]">Metadata only</span>}
                   </div>
-                  {d.fileUrl ? (
-                    <a href={d.fileUrl} target="_blank" rel="noreferrer" download className="text-center block w-full bg-[var(--primary)] text-white py-2 text-xs font-medium rounded hover:brightness-110 shadow-sm transition-all">
-                      Download File
-                    </a>
-                  ) : <span className="block w-full text-center py-2 text-xs text-[var(--muted-foreground)] bg-[var(--muted)] rounded border border-[var(--border)]">Metadata only</span>}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -194,18 +208,24 @@ export default function ClientPortal() {
         {tab === "cases" && (
           <div>
             <h1 className="font-serif text-3xl font-semibold mb-6">Matters History</h1>
-            <div className="space-y-4">
-              {cases.map(d => (
-                <div key={d._id} className="p-5 bg-[var(--card)] border border-[var(--border)] shadow-sm rounded-lg hover:border-[var(--primary)] transition-all">
-                  <div className="font-mono text-xs text-[var(--muted-foreground)] mb-2 flex justify-between">
-                    <span>Matter Reference: {d._id.slice(0, 10).toUpperCase()}</span>
-                    <span className="px-2 py-0.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 rounded font-semibold">Active</span>
+            {cases.length === 0 ? (
+              <div className="p-8 text-center text-sm border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]">
+                No matters recorded for your account.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {cases.map(d => (
+                  <div key={d._id} className="p-5 bg-[var(--card)] border border-[var(--border)] shadow-sm rounded-lg hover:border-[var(--primary)] transition-all">
+                    <div className="font-mono text-xs text-[var(--muted-foreground)] mb-2 flex justify-between">
+                      <span>Matter Reference: {d._id.slice(0, 10).toUpperCase()}</span>
+                      <span className="px-2 py-0.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 rounded font-semibold">Active</span>
+                    </div>
+                    <div className="font-serif text-lg font-semibold text-[var(--foreground)] mb-1">{d.title || d.matterNumber}</div>
+                    <div className="text-sm text-[var(--muted-foreground)]">Practice Area: <b className="font-medium text-[var(--foreground)]">{d.type || 'General Corporate'}</b></div>
                   </div>
-                  <div className="font-serif text-lg font-semibold text-[var(--foreground)] mb-1">{d.title || d.matterNumber}</div>
-                  <div className="text-sm text-[var(--muted-foreground)]">Practice Area: <b className="font-medium text-[var(--foreground)]">{d.type || 'General Corporate'}</b></div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

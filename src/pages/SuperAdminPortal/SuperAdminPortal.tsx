@@ -223,6 +223,11 @@ export default function SuperAdminPortal() {
                       Staff Summary
                     </h2>
                     <div className="space-y-2">
+                      {staff.length === 0 && (
+                        <div className="py-6 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
+                          No staff members recorded yet.
+                        </div>
+                      )}
                       {staff.map((s) => {
                         const rc = roleColors[s.role];
                         return (
@@ -252,6 +257,11 @@ export default function SuperAdminPortal() {
                     Recent Cases
                   </h2>
                   <div className="space-y-2">
+                    {cases.length === 0 && (
+                      <div className="py-6 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
+                        No cases recorded yet.
+                      </div>
+                    )}
                     {cases.slice(0, 4).map((c) => {
                       const sc = statusColors[c.status];
                       return (
@@ -298,6 +308,9 @@ export default function SuperAdminPortal() {
                     <div className="h-px flex-1" style={{ background: "var(--border)" }} />
                   </div>
                   <div className="space-y-3">
+                    {lawyers.length === 0 && (
+                      <p className="py-6 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>No lawyers registered yet.</p>
+                    )}
                     {lawyers.map((s) => <StaffCard key={s.id} member={s} onDelete={() => setConfirm({ type: "delete_staff", staff: s })} onToggle={() => toggleActive(s.id)} />)}
                   </div>
                 </div>
@@ -310,6 +323,9 @@ export default function SuperAdminPortal() {
                     <div className="h-px flex-1" style={{ background: "var(--border)" }} />
                   </div>
                   <div className="space-y-3">
+                    {support.length === 0 && (
+                      <p className="py-6 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>No support staff registered yet.</p>
+                    )}
                     {support.map((s) => <StaffCard key={s.id} member={s} onDelete={() => setConfirm({ type: "delete_staff", staff: s })} onToggle={() => toggleActive(s.id)} />)}
                   </div>
                 </div>
@@ -351,6 +367,11 @@ export default function SuperAdminPortal() {
                     <div className="col-span-2">Next Hearing</div>
                     <div className="col-span-1 text-right">Quick Action</div>
                   </div>
+                  {cases.length === 0 && (
+                    <div className="py-16 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
+                      No cases recorded yet.
+                    </div>
+                  )}
                   {cases.map((c, i) => {
                     const sc = statusColors[c.status];
                     return (
