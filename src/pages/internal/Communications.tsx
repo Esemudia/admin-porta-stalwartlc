@@ -267,9 +267,12 @@ export default function Communications() {
         const connect = () => {
             if (!isMounted) return;
             try {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                // Connect via port 3000 where NestJS WebSocketServer is running
-                const wsUrl = `${protocol}//${window.location.hostname}:3000/ws/chat`;
+                // Resolve WebSocket URL: environment variable > production live URL > local port 3000 dev server
+                const wsUrl = import.meta.env.VITE_WS_URL 
+                    ? import.meta.env.VITE_WS_URL 
+                    : (import.meta.env.PROD 
+                        ? 'wss://api.stalwartlc.com/ws/chat' 
+                        : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:3000/ws/chat`);
                 const ws = new WebSocket(wsUrl);
                 wsRef.current = ws;
                 setWsStatus("connecting");
@@ -1522,7 +1525,7 @@ export default function Communications() {
                                         <span className={`w-2 h-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
                                         <span className="font-mono">{wsStatus === 'connected' ? 'WSS Socket Open' : 'Connecting...'}</span>
                                     </span>
-                                    <span className="font-mono text-[10px] text-[var(--accent)]">:3000/ws/chat</span>
+                                    <span className="font-mono text-[10px] text-[var(--accent)]">/ws/chat</span>
                                 </div>
                                 <div className="text-[10px] text-[var(--muted-foreground)]/80 flex items-center justify-between">
                                     <span>Encrypted with SHA-256 Ledger</span>

@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchMatters, updateMatter, fetchDocuments, uploadDocument, fetchTasks, createTask, updateTask, approveTask, rejectTask, fetchInvoices, createInvoice, fetchEvents, createEvent, updateEvent } from "../../api";
+import { API_BASE, getAuthHeaders, fetchMatters, updateMatter, fetchDocuments, uploadDocument, fetchTasks, createTask, updateTask, approveTask, rejectTask, fetchInvoices, createInvoice, fetchEvents, createEvent, updateEvent } from "../../api";
 import { getSession } from "../../auth";
 import DocxViewer from "../../components/DocxViewer";
 import PdfViewer from "../../components/PdfViewer";
@@ -88,11 +88,9 @@ export default function MatterWorkspace() {
     const handleEditDocument = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Need to import updateDocument from api.ts at the top! Wait, I'll just dynamically fetch if it isn't imported, or I can update the import list.
-            // But let's assume it's imported (I will fix import above).
-            const res = await fetch(`/api/v1/documents/${isEditingDoc._id || isEditingDoc.id}`, {
+            const res = await fetch(`${API_BASE}/documents/${isEditingDoc._id || isEditingDoc.id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ name: editDocName })
             });
             if (res.ok) {
