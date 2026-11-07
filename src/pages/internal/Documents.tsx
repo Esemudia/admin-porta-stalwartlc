@@ -3,12 +3,14 @@ import { fetchDocuments, fetchMatters, uploadDocument } from "../../api";
 import { getSession } from "../../auth";
 import PdfViewer from "../../components/PdfViewer";
 import DocxViewer from "../../components/DocxViewer";
+import { DOCUMENT_CATEGORIES } from "../../data";
 
 export default function Documents() {
     const session = getSession();
     const isLawyer = session?.role === 'lawyer';
 
     const [searchTerm, setSearchTerm] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState<'all' | 'Court Processes' | 'Exhibits'>('all');
     const [docsList, setDocsList] = useState<any[]>([]);
     const [mattersList, setMattersList] = useState<any[]>([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -16,7 +18,7 @@ export default function Documents() {
     const [uploadError, setUploadError] = useState("");
     const [loading, setLoading] = useState(true);
 
-    const [newDoc, setNewDoc] = useState({ name: "", caseId: "", type: "evidence" });
+    const [newDoc, setNewDoc] = useState({ name: "", caseId: "", type: "Court Processes" });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -104,6 +106,14 @@ export default function Documents() {
             return `${found.matterNumber || ''} - ${found.title}`;
         }
         return matterId;
+    };
+
+    const getNormalizedCategory = (category?: string): 'Court Processes' | 'Exhibits' => {
+        const lower = (category || '').toLowerCase();
+        if (lower.includes('exhibit') || lower.includes('evidence')) {
+            return 'Exhibits';
+        }
+        return 'Court Processes';
     };
 
     return (
@@ -225,14 +235,11 @@ export default function Documents() {
                                 <select
                                     value={newDoc.type}
                                     onChange={e => setNewDoc({ ...newDoc, type: e.target.value })}
-                                    className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)] capitalize"
+                                    className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]"
                                 >
-                                    <option value="evidence">Evidence</option>
-                                    <option value="pleading">Court Pleading</option>
-                                    <option value="brief">Legal Brief</option>
-                                    <option value="contract">Agreement / Contract</option>
-                                    <option value="correspondence">Official Correspondence</option>
-                                    <option value="other">Other</option>
+                                    {DOCUMENT_CATEGORIES.map(cat => (
+                                        <option key={cat} value={cat}>{cat === 'Court Processes' ? '⚖️ Court Processes' : '📎 Exhibits'}</option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -257,8 +264,8 @@ export default function Documents() {
                 </div>
             )}
 
-            {/* Search Bar */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            {/* Search and Category Filter Bar */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6 items-stretch md:items-center justify-between">
                 <div className="flex-1 relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] opacity-70">🔍</span>
                     <input
@@ -268,6 +275,26 @@ export default function Documents() {
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
+                </div>
+                <div className="flex items-center gap-1.5 p-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shrink-0">
+                    <button
+                        onClick={() => setCategoryFilter('all')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${categoryFilter === 'all' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+                    >
+                        All ({docsList.length})
+                    </button>
+                    <button
+                        onClick={() => setCategoryFilter('Court Processes')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${categoryFilter === 'Court Processes' ? 'bg-blue-600 text-white shadow-sm' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+                    >
+                        <span>⚖️</span> Court Processes ({docsList.filter(d => getNormalizedCategory(d.category) === 'Court Processes').length})
+                    </button>
+                    <button
+                        onClick={() => setCategoryFilter('Exhibits')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${categoryFilter === 'Exhibits' ? 'bg-amber-600 text-white shadow-sm' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+                    >
+                        <span>📎</span> Exhibits ({docsList.filter(d => getNormalizedCategory(d.category) === 'Exhibits').length})
+                    </button>
                 </div>
             </div>
 
@@ -327,38 +354,50 @@ export default function Documents() {
                 ) : (
                     docsList
                         .filter((d: any) => {
+                            const normalized = getNormalizedCategory(d.category);
+                            if (categoryFilter !== 'all' && normalized !== categoryFilter) {
+                                return false;
+                            }
                             const term = searchTerm.toLowerCase();
                             const matterDisplay = getMatterDisplayName(d.matterId).toLowerCase();
                             return (d.name || '').toLowerCase().includes(term) ||
                                 (d.matterId || '').toString().toLowerCase().includes(term) ||
                                 matterDisplay.includes(term) ||
                                 (d.category || '').toLowerCase().includes(term) ||
+                                normalized.toLowerCase().includes(term) ||
                                 (d.documentNumber || '').toLowerCase().includes(term);
                         })
-                        .map((d: any) => (
-                            <div key={d._id || d.id} className="grid grid-cols-6 text-sm p-4 border-b border-[var(--border)] items-center hover:bg-[var(--muted)]/30 transition-colors last:border-0">
-                                <div className="col-span-2 flex items-center gap-3">
-                                    <span className="text-xl">📄</span>
-                                    <div>
-                                        <div className="font-medium text-[var(--foreground)]">{d.name}</div>
-                                        <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] opacity-70">
-                                            V.{d.currentVersion || 1} • {d.documentNumber || 'REF-DOC'}
+                        .map((d: any) => {
+                            const normalizedCategory = getNormalizedCategory(d.category);
+                            return (
+                                <div key={d._id || d.id} className="grid grid-cols-6 text-sm p-4 border-b border-[var(--border)] items-center hover:bg-[var(--muted)]/30 transition-colors last:border-0">
+                                    <div className="col-span-2 flex items-center gap-3">
+                                        <span className="text-xl">{normalizedCategory === 'Court Processes' ? '⚖️' : '📎'}</span>
+                                        <div>
+                                            <div className="font-medium text-[var(--foreground)]">{d.name}</div>
+                                            <div className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] opacity-70">
+                                                V.{d.currentVersion || 1} • {d.documentNumber || 'REF-DOC'}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="col-span-2 pr-4">
-                                    <div className="font-medium text-xs text-[var(--foreground)] truncate">
-                                        {getMatterDisplayName(d.matterId)}
+                                    <div className="col-span-2 pr-4">
+                                        <div className="font-medium text-xs text-[var(--foreground)] truncate">
+                                            {getMatterDisplayName(d.matterId)}
+                                        </div>
+                                        <div className="text-[10px] font-mono text-[var(--muted-foreground)]">
+                                            {d.matterId || "Unlinked"}
+                                        </div>
                                     </div>
-                                    <div className="text-[10px] font-mono text-[var(--muted-foreground)]">
-                                        {d.matterId || "Unlinked"}
+                                    <div>
+                                        <span className={`text-xs px-2.5 py-1 rounded font-medium border inline-flex items-center gap-1.5 ${
+                                            normalizedCategory === 'Court Processes'
+                                                ? 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                                                : 'bg-amber-500/10 text-amber-500 border-amber-500/30'
+                                        }`}>
+                                            <span>{normalizedCategory === 'Court Processes' ? '⚖️' : '📎'}</span>
+                                            {normalizedCategory}
+                                        </span>
                                     </div>
-                                </div>
-                                <div>
-                                    <span className="text-xs px-2 py-1 bg-[var(--muted)] text-[var(--muted-foreground)] border border-[var(--border)] rounded font-mono capitalize">
-                                        {d.category || 'evidence'}
-                                    </span>
-                                </div>
                                 <div className="text-right space-x-3 text-xs flex justify-end">
                                     {d.fileUrl ? (
                                         <button
@@ -372,7 +411,8 @@ export default function Documents() {
                                     )}
                                 </div>
                             </div>
-                        ))
+                        );
+                    })
                 )}
             </div>
         </div>

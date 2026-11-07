@@ -5,12 +5,13 @@ import logo from "../../assets/logo.png";
 import {
   cases as initialCases,
   invoices,
-  clients,
+  clients as initialClients,
   staffMembers,
   caseDocuments,
   type Case,
   type CaseStatus,
   type Client,
+  COURTS,
 } from "../../data";
 
 const statusColors: Record<CaseStatus, { bg: string; text: string; label: string }> = {
@@ -28,6 +29,10 @@ const invoiceColors: Record<string, { bg: string; text: string }> = {
 };
 
 const docTypeColors: Record<string, { bg: string; text: string; label: string }> = {
+  "Court Processes": { bg: "rgba(59,130,246,0.1)", text: "#60a5fa", label: "⚖️ Court Processes" },
+  "Exhibits": { bg: "rgba(245,158,11,0.1)", text: "#f59e0b", label: "📎 Exhibits" },
+  court_processes: { bg: "rgba(59,130,246,0.1)", text: "#60a5fa", label: "⚖️ Court Processes" },
+  exhibits: { bg: "rgba(245,158,11,0.1)", text: "#f59e0b", label: "📎 Exhibits" },
   pleading: { bg: "rgba(99,102,241,0.1)", text: "#818cf8", label: "Pleading" },
   court_order: { bg: "rgba(234,179,8,0.1)", text: "#eab308", label: "Court Order" },
   brief: { bg: "rgba(59,130,246,0.1)", text: "#60a5fa", label: "Brief" },
@@ -45,6 +50,48 @@ type AdminView = "list" | "upload" | "case";
 export default function AdminPortal() {
   const navigate = useNavigate();
   const [cases, setCases] = useState<Case[]>(initialCases);
+  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [clientForm, setClientForm] = useState({
+    name: "",
+    company: "",
+    email: "",
+    phone: "",
+    outstanding: 0,
+  });
+
+  const handleOpenEditClient = (c: Client) => {
+    setEditingClient(c);
+    setClientForm({
+      name: c.name,
+      company: c.company || "",
+      email: c.email,
+      phone: c.phone,
+      outstanding: c.outstanding || 0,
+    });
+  };
+
+  const handleSaveClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+    setClients((prev) =>
+      prev.map((c) =>
+        c.id === editingClient.id
+          ? {
+              ...c,
+              name: clientForm.name,
+              company: clientForm.company,
+              email: clientForm.email,
+              phone: clientForm.phone,
+              outstanding: Number(clientForm.outstanding) || 0,
+            }
+          : c
+      )
+    );
+    setEditingClient(null);
+    showToast("Client details updated successfully.");
+  };
+
   const [section, setSection] = useState<AdminSection>("cases");
   const [view, setView] = useState<AdminView>("list");
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -278,7 +325,16 @@ export default function AdminPortal() {
                         <option value="archived" style={{ background: "var(--card)", color: "#a855f7" }}>Archived</option>
                       </select>
                     </div>
-                    <div className="col-span-2 flex items-center font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>{c.caseNumber}</div>
+                    <div className="col-span-2 flex flex-col justify-center font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>
+                      <div>{c.caseNumber}</div>
+                      {c.suitNumber && (
+                        <div className="mt-0.5">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            Suit: {c.suitNumber}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div className="col-span-3 flex items-center">
                       <div>
                         <div className="font-serif text-sm font-semibold" style={{ color: "var(--foreground)" }}>{c.title}</div>
@@ -286,8 +342,9 @@ export default function AdminPortal() {
                       </div>
                     </div>
                     <div className="col-span-2 flex items-center text-xs" style={{ color: "var(--muted-foreground)" }}>{c.attorney}</div>
-                    <div className="col-span-2 flex items-center text-xs" style={{ color: "var(--muted-foreground)" }}>
-                      {c.court ? c.court.split("—")[0].trim() : c.type}
+                    <div className="col-span-2 flex flex-col justify-center text-xs" style={{ color: "var(--muted-foreground)" }}>
+                      <span className="font-medium text-[var(--foreground)]">{c.court ?? c.type}</span>
+                      {c.court && <span className="text-[10px] opacity-75">{c.type}</span>}
                     </div>
                     <div className="col-span-1 flex items-center text-xs font-mono" style={{ color: c.nextHearing ? "var(--primary)" : "var(--muted-foreground)" }}>
                       {c.nextHearing ?? "—"}
@@ -330,12 +387,13 @@ export default function AdminPortal() {
                 style={{ background: "var(--card)", borderBottom: "1px solid var(--border)", color: "var(--muted-foreground)" }}
               >
                 <div className="col-span-3">Name</div>
-                <div className="col-span-3">Email</div>
+                <div className="col-span-2">Email</div>
                 <div className="col-span-2">Phone</div>
                 <div className="col-span-1">Cases</div>
                 <div className="col-span-1">Since</div>
                 <div className="col-span-1 text-right">Billed</div>
                 <div className="col-span-1 text-right">Owed</div>
+                <div className="col-span-1 text-right">Action</div>
               </div>
               {clients.length === 0 && (
                 <div className="py-16 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>
@@ -360,7 +418,7 @@ export default function AdminPortal() {
                       {cl.company && <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{cl.company}</div>}
                     </div>
                   </div>
-                  <div className="col-span-3 flex items-center text-xs" style={{ color: "var(--muted-foreground)" }}>{cl.email}</div>
+                  <div className="col-span-2 flex items-center text-xs" style={{ color: "var(--muted-foreground)" }}>{cl.email}</div>
                   <div className="col-span-2 flex items-center text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>{cl.phone}</div>
                   <div className="col-span-1 flex items-center font-mono text-sm font-semibold" style={{ color: "var(--primary)" }}>{cl.activeCases}</div>
                   <div className="col-span-1 flex items-center text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>{cl.joinedDate.slice(0, 7)}</div>
@@ -370,6 +428,16 @@ export default function AdminPortal() {
                   <div className="col-span-1 flex items-center justify-end text-xs font-semibold" style={{ color: cl.outstanding > 0 ? "#ef4444" : "#22c55e" }}>
                     {cl.outstanding > 0 ? fmt(cl.outstanding) : "Clear"}
                   </div>
+                  <div className="col-span-1 flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditClient(cl)}
+                      className="px-2.5 py-1 text-xs font-mono rounded hover:brightness-110 cursor-pointer"
+                      style={{ background: "var(--secondary)", color: "var(--primary)" }}
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -378,32 +446,148 @@ export default function AdminPortal() {
             {clients.length > 0 && (
               <div className="mt-8">
                 <h2 className="font-serif text-xl font-semibold mb-4" style={{ color: "var(--foreground)" }}>Case Breakdown by Client</h2>
-              {clients.map((cl) => {
-                const clientCases = cases.filter((c) => c.clientId === cl.id);
-                if (clientCases.length === 0) return null;
-                return (
-                  <div key={cl.id} className="mb-6">
-                    <div className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>{cl.name}</div>
-                    <div className="space-y-2">
-                      {clientCases.map((c) => {
-                        const sc = statusColors[c.status];
-                        return (
-                          <div
-                            key={c.id}
-                            className="flex items-center gap-4 px-4 py-3"
-                            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
-                          >
-                            <span className="text-xs px-2 py-0.5 font-mono" style={{ background: sc.bg, color: sc.text }}>{sc.label}</span>
-                            <span className="font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>{c.caseNumber}</span>
-                            <span className="font-serif text-sm flex-1" style={{ color: "var(--foreground)" }}>{c.title}</span>
-                            <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{c.attorney}</span>
-                          </div>
-                        );
-                      })}
+                {clients.map((cl) => {
+                  const clientCases = cases.filter((c) => c.clientId === cl.id);
+                  if (clientCases.length === 0) return null;
+                  return (
+                    <div key={cl.id} className="mb-6">
+                      <div className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>{cl.name}</div>
+                      <div className="space-y-2">
+                        {clientCases.map((c) => {
+                          const sc = statusColors[c.status];
+                          return (
+                            <div
+                              key={c.id}
+                              className="flex items-center gap-4 px-4 py-3"
+                              style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                            >
+                              <span className="text-xs px-2 py-0.5 font-mono" style={{ background: sc.bg, color: sc.text }}>{sc.label}</span>
+                              <span className="font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>{c.caseNumber}</span>
+                              <span className="font-serif text-sm flex-1" style={{ color: "var(--foreground)" }}>{c.title}</span>
+                              <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{c.attorney}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Edit Client Modal */}
+            {editingClient && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div
+                  className="w-full max-w-lg p-6 shadow-2xl relative"
+                  style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                >
+                  <div className="flex items-center justify-between pb-4 mb-5 border-b" style={{ borderColor: "var(--border)" }}>
+                    <div>
+                      <h2 className="font-serif text-xl font-semibold" style={{ color: "var(--foreground)" }}>
+                        Edit Client Details
+                      </h2>
+                      <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
+                        Update contact and billing profile for {editingClient.name}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingClient(null)}
+                      className="text-lg leading-none hover:opacity-70 p-1 cursor-pointer"
+                      style={{ color: "var(--muted-foreground)" }}
+                    >
+                      ✕
+                    </button>
                   </div>
-                );
-              })}
+
+                  <form onSubmit={handleSaveClient} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider mb-1" style={{ color: "var(--muted-foreground)" }}>
+                        Client / Full Name *
+                      </label>
+                      <input
+                        required
+                        value={clientForm.name}
+                        onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })}
+                        className="w-full px-3 py-2 text-sm outline-none"
+                        style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider mb-1" style={{ color: "var(--muted-foreground)" }}>
+                        Company / Organization
+                      </label>
+                      <input
+                        value={clientForm.company}
+                        onChange={(e) => setClientForm({ ...clientForm, company: e.target.value })}
+                        placeholder="Optional for corporate clients"
+                        className="w-full px-3 py-2 text-sm outline-none"
+                        style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-mono uppercase tracking-wider mb-1" style={{ color: "var(--muted-foreground)" }}>
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={clientForm.email}
+                          onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
+                          className="w-full px-3 py-2 text-sm outline-none"
+                          style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-mono uppercase tracking-wider mb-1" style={{ color: "var(--muted-foreground)" }}>
+                          Phone Number
+                        </label>
+                        <input
+                          value={clientForm.phone}
+                          onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })}
+                          className="w-full px-3 py-2 text-sm outline-none font-mono"
+                          style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider mb-1" style={{ color: "var(--muted-foreground)" }}>
+                        Outstanding Balance (NGN)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={clientForm.outstanding}
+                        onChange={(e) => setClientForm({ ...clientForm, outstanding: Number(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 text-sm outline-none font-mono"
+                        style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingClient(null)}
+                        className="px-4 py-2 text-xs font-mono border rounded hover:bg-white/5 cursor-pointer"
+                        style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 text-xs font-mono font-medium rounded shadow-sm hover:brightness-110 cursor-pointer"
+                        style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
           </div>
@@ -695,12 +879,13 @@ function CaseManager({
 
         {/* Extended meta */}
         <div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-0 mb-6"
+          className="grid grid-cols-2 lg:grid-cols-5 gap-0 mb-6"
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           {[
             { label: "Client", value: c.clientName },
-            { label: "Court / Tribunal", value: c.court ?? "N/A" },
+            { label: "Suit Number", value: c.suitNumber ?? "N/A" },
+            { label: "The Court", value: c.court ?? "N/A" },
             { label: "Opposing Party", value: c.opposingParty ?? "N/A" },
             { label: "Claim Value", value: c.claimValue ? fmt(c.claimValue) : "N/A" },
           ].map((m, i) => (
@@ -835,11 +1020,12 @@ function CaseManager({
 function UploadCase({ onBack, onUpload, onLogout }: { onBack: () => void; onUpload: (c: Case) => void; onLogout: () => void }) {
   const [form, setForm] = useState({
     title: "",
-    type: "Business & Corporate",
+    type: "Civil Litigation",
+    suitNumber: "",
     attorney: "Chukwuemeka Stalwart",
     clientName: "",
     clientId: "cl001",
-    court: "",
+    court: "Federal High Court",
     opposingParty: "",
     claimValue: "",
     filedDate: new Date().toISOString().split("T")[0],
@@ -855,6 +1041,7 @@ function UploadCase({ onBack, onUpload, onLogout }: { onBack: () => void; onUplo
     onUpload({
       id,
       caseNumber,
+      suitNumber: form.suitNumber || undefined,
       title: form.title,
       type: form.type,
       attorney: form.attorney,
@@ -907,7 +1094,7 @@ function UploadCase({ onBack, onUpload, onLogout }: { onBack: () => void; onUplo
           <div className="grid lg:grid-cols-2 gap-5">
             {F("Practice Area *", (
               <select required value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={ic} style={is} onFocus={fo} onBlur={bl}>
-                {["Business & Corporate", "Civil Litigation", "Intellectual Property", "Energy & Natural Resources", "Admiralty / Maritime", "Start-Ups"].map((t) => <option key={t} value={t}>{t}</option>)}
+                {["Civil Litigation", "Business & Corporate", "Intellectual Property", "Energy & Natural Resources", "Admiralty / Maritime", "Start-Ups"].map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             ))}
             {F("Lead Attorney *", (
@@ -919,38 +1106,46 @@ function UploadCase({ onBack, onUpload, onLogout }: { onBack: () => void; onUplo
 
           <div className="grid lg:grid-cols-2 gap-5">
             {F("Client Name *", <input required type="text" value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} placeholder="Full name of client or company" className={ic} style={is} onFocus={fo} onBlur={bl} />)}
-            {F("Court / Tribunal", <input type="text" value={form.court} onChange={(e) => setForm({ ...form, court: e.target.value })} placeholder="e.g. Federal High Court, Lagos" className={ic} style={is} onFocus={fo} onBlur={bl} />)}
+            {F("Suit Number (Litigation)", <input type="text" value={form.suitNumber} onChange={(e) => setForm({ ...form, suitNumber: e.target.value })} placeholder="e.g. FHC/ABJ/CS/104/2026" className={ic} style={is} onFocus={fo} onBlur={bl} />)}
           </div>
 
           <div className="grid lg:grid-cols-2 gap-5">
+            {F("The Court", (
+              <select value={form.court} onChange={(e) => setForm({ ...form, court: e.target.value })} className={ic} style={is} onFocus={fo} onBlur={bl}>
+                {COURTS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ))}
             {F("Opposing Party", <input type="text" value={form.opposingParty} onChange={(e) => setForm({ ...form, opposingParty: e.target.value })} placeholder="Leave blank for non-contentious matters" className={ic} style={is} onFocus={fo} onBlur={bl} />)}
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-5">
             {F("Claim Value (NGN)", <input type="number" value={form.claimValue} onChange={(e) => setForm({ ...form, claimValue: e.target.value })} placeholder="Leave blank if N/A" className={ic} style={is} onFocus={fo} onBlur={bl} />)}
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-5">
-            {F("Initial Status", (
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as CaseStatus })} className={ic} style={is} onFocus={fo} onBlur={bl}>
-                {(["pending", "active", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => <option key={s} value={s}>{statusColors[s].label}</option>)}
-              </select>
-            ))}
-            {F("Filed Date", <input type="date" value={form.filedDate} onChange={(e) => setForm({ ...form, filedDate: e.target.value })} className={ic} style={is} onFocus={fo} onBlur={bl} />)}
-            {F("Next Hearing Date", <input type="date" value={form.nextHearing} onChange={(e) => setForm({ ...form, nextHearing: e.target.value })} className={ic} style={is} onFocus={fo} onBlur={bl} />)}
-          </div>
-
-          {F("Case Description *", (
-            <textarea required rows={5} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the nature of the matter, parties involved, and key facts..." className={`${ic} resize-none`} style={is} onFocus={fo} onBlur={bl} />
-          ))}
-
-          <div className="flex gap-4 pt-2">
-            <button type="submit" className="flex-1 py-3 text-sm font-medium tracking-wide transition-opacity" style={{ background: "var(--primary)", color: "var(--primary-foreground)" }} onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
-              Upload Case
-            </button>
-            <button type="button" onClick={onBack} className="px-6 py-3 text-sm transition-colors" style={{ border: "1px solid var(--border)", color: "var(--muted-foreground)" }} onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--primary)")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
-              Cancel
-            </button>
-          </div>
-        </form>
+      <div className="grid lg:grid-cols-3 gap-5">
+        {F("Initial Status", (
+          <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as CaseStatus })} className={ic} style={is} onFocus={fo} onBlur={bl}>
+            {(["pending", "active", "on_hold", "closed", "archived"] as CaseStatus[]).map((s) => <option key={s} value={s}>{statusColors[s].label}</option>)}
+          </select>
+        ))}
+        {F("Filed Date", <input type="date" value={form.filedDate} onChange={(e) => setForm({ ...form, filedDate: e.target.value })} className={ic} style={is} onFocus={fo} onBlur={bl} />)}
+        {F("Next Hearing Date", <input type="date" value={form.nextHearing} onChange={(e) => setForm({ ...form, nextHearing: e.target.value })} className={ic} style={is} onFocus={fo} onBlur={bl} />)}
       </div>
-    </div>
+
+      {F("Case Description *", (
+        <textarea required rows={5} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the nature of the matter, parties involved, and key facts..." className={`${ic} resize-none`} style={is} onFocus={fo} onBlur={bl} />
+      ))}
+
+      <div className="flex gap-4 pt-2">
+        <button type="submit" className="flex-1 py-3 text-sm font-medium tracking-wide transition-opacity" style={{ background: "var(--primary)", color: "var(--primary-foreground)" }} onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
+          Upload Case
+        </button>
+        <button type="button" onClick={onBack} className="px-6 py-3 text-sm transition-colors" style={{ border: "1px solid var(--border)", color: "var(--muted-foreground)" }} onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--primary)")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
+          Cancel
+        </button>
+      </div>
+    </form>
+      </div >
+    </div >
   );
 }
