@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, clearSession } from "../../auth";
-import { cases as initialCases, type Case, type CaseStatus } from "../../data";
+import { cases as initialCases, type Case, type CaseStatus, COURTS } from "../../data";
 import type { UserRole } from "../../auth";
 import logo from "../../assets/logo.png";
 
@@ -252,12 +252,13 @@ function CaseReadView({ c, onBack, onLogout, staffName }: { c: Case; onBack: () 
           <span className="text-xs px-2 py-0.5" style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}>Read-only view</span>
         </div>
         <h1 className="font-serif text-2xl lg:text-3xl font-semibold mb-4" style={{ color: "var(--foreground)" }}>{c.title}</h1>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-5"
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8 p-5"
           style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           {[
             { label: "Attorney", value: c.attorney },
-            { label: "Practice Area", value: c.type },
             { label: "Client", value: c.clientName },
+            { label: "Suit Number", value: c.suitNumber ?? "N/A" },
+            { label: "The Court", value: c.court ?? "N/A" },
             { label: "Next Hearing", value: c.nextHearing ?? "Not scheduled" },
           ].map((m) => (
             <div key={m.label}>
@@ -304,7 +305,7 @@ function StaffUploadForm({ uploaderName, onUpload, onCancel }: {
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
-    title: "", type: "Civil Litigation", clientName: "", attorney: LAWYERS[0],
+    title: "", type: "Civil Litigation", suitNumber: "", court: "Federal High Court", clientName: "", attorney: LAWYERS[0],
     filedDate: new Date().toISOString().split("T")[0], nextHearing: "", description: "", status: "pending" as CaseStatus,
   });
 
@@ -313,6 +314,8 @@ function StaffUploadForm({ uploaderName, onUpload, onCancel }: {
     onUpload({
       id: `c${Date.now()}`,
       caseNumber: `SLC/${new Date().getFullYear()}/${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      suitNumber: form.suitNumber || undefined,
+      court: form.court || undefined,
       title: form.title, type: form.type, attorney: form.attorney, uploadedBy: uploaderName,
       clientName: form.clientName, clientId: `cl${Date.now()}`, filedDate: form.filedDate, nextHearing: form.nextHearing || null,
       description: form.description, status: form.status, updates: [],
@@ -343,7 +346,7 @@ function StaffUploadForm({ uploaderName, onUpload, onCancel }: {
             <label className="block text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Practice Area *</label>
             <select required value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
               className={inp} style={inpStyle} onFocus={focus} onBlur={blur}>
-              {["Business & Corporate", "Civil Litigation", "Intellectual Property", "Energy & Natural Resources", "Admiralty / Maritime", "Start-Ups"].map(t => (
+              {["Civil Litigation", "Business & Corporate", "Intellectual Property", "Energy & Natural Resources", "Admiralty / Maritime", "Start-Ups"].map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
@@ -354,6 +357,20 @@ function StaffUploadForm({ uploaderName, onUpload, onCancel }: {
               className={inp} style={inpStyle} onFocus={focus} onBlur={blur}>
               {LAWYERS.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
+          </div>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>The Court *</label>
+            <select value={form.court} onChange={e => setForm({ ...form, court: e.target.value })}
+              className={inp} style={inpStyle} onFocus={focus} onBlur={blur}>
+              {COURTS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Suit Number (Litigation)</label>
+            <input type="text" value={form.suitNumber} onChange={e => setForm({ ...form, suitNumber: e.target.value })}
+              placeholder="e.g. FHC/ABJ/CS/104/2026" className={inp} style={inpStyle} onFocus={focus} onBlur={blur} />
           </div>
         </div>
         <div className="grid lg:grid-cols-2 gap-5">

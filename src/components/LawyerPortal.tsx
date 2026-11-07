@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cases as initialCases, type Case, type CaseStatus, type CaseUpdate } from "../data";
+import { cases as initialCases, type Case, type CaseStatus, type CaseUpdate, COURTS } from "../data";
 import logo from "../assets/logo.png";
 
 const statusColors: Record<CaseStatus, { bg: string; text: string; label: string }> = {
@@ -256,6 +256,16 @@ function CaseDetail({ c, onBack, onAddUpdate, onStatusChange, onLogout }: {
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap mb-3">
               <span className="font-mono text-xs" style={{ color: "var(--muted-foreground)" }}>{c.caseNumber}</span>
+              {c.suitNumber && (
+                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">
+                  Suit: {c.suitNumber}
+                </span>
+              )}
+              {c.court && (
+                <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+                  🏛️ {c.court}
+                </span>
+              )}
               <span className="text-xs px-2 py-0.5 font-mono" style={{ background: sc.bg, color: sc.text }}>{sc.label}</span>
               {!isOwn && <span className="text-xs px-2 py-0.5" style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}>Read-only</span>}
             </div>
@@ -362,7 +372,7 @@ function UploadCaseForm({ lawyerName, onUpload, onCancel }: {
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
-    title: "", type: "Civil Litigation", clientName: "",
+    title: "", type: "Civil Litigation", suitNumber: "", court: "Federal High Court", clientName: "",
     filedDate: new Date().toISOString().split("T")[0], nextHearing: "", description: "", status: "pending" as CaseStatus,
   });
 
@@ -371,6 +381,8 @@ function UploadCaseForm({ lawyerName, onUpload, onCancel }: {
     onUpload({
       id: `c${Date.now()}`,
       caseNumber: `SLC/${new Date().getFullYear()}/${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      suitNumber: form.suitNumber || undefined,
+      court: form.court || undefined,
       title: form.title, type: form.type, attorney: lawyerName, uploadedBy: lawyerName,
       clientName: form.clientName, clientId: "mock", filedDate: form.filedDate, nextHearing: form.nextHearing || null,
       description: form.description, status: form.status, updates: [],
@@ -399,7 +411,7 @@ function UploadCaseForm({ lawyerName, onUpload, onCancel }: {
             <label className="block text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Practice Area *</label>
             <select required value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
               className={inp} style={inpStyle}>
-              {["Business & Corporate", "Civil Litigation", "Intellectual Property", "Energy & Natural Resources", "Admiralty / Maritime", "Start-Ups"].map(t => (
+              {["Civil Litigation", "Business & Corporate", "Intellectual Property", "Energy & Natural Resources", "Admiralty / Maritime", "Start-Ups"].map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
@@ -408,6 +420,22 @@ function UploadCaseForm({ lawyerName, onUpload, onCancel }: {
             <label className="block text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Client Name *</label>
             <input required type="text" value={form.clientName} onChange={e => setForm({ ...form, clientName: e.target.value })}
               placeholder="Full name or company" className={inp} style={inpStyle}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border)")} />
+          </div>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>The Court *</label>
+            <select value={form.court} onChange={e => setForm({ ...form, court: e.target.value })}
+              className={inp} style={inpStyle}>
+              {COURTS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-mono mb-2" style={{ color: "var(--muted-foreground)" }}>Suit Number (Litigation)</label>
+            <input type="text" value={form.suitNumber} onChange={e => setForm({ ...form, suitNumber: e.target.value })}
+              placeholder="e.g. FHC/ABJ/CS/104/2026" className={inp} style={inpStyle}
               onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
               onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border)")} />
           </div>

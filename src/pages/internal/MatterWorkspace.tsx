@@ -4,6 +4,7 @@ import { API_BASE, getAuthHeaders, fetchMatters, updateMatter, fetchDocuments, u
 import { getSession } from "../../auth";
 import DocxViewer from "../../components/DocxViewer";
 import PdfViewer from "../../components/PdfViewer";
+import { COURTS, DOCUMENT_CATEGORIES } from "../../data";
 export default function MatterWorkspace() {
     const session = getSession();
     const isAdmin = session?.role === 'super_admin' || session?.role === 'exec_secretary';
@@ -14,14 +15,21 @@ export default function MatterWorkspace() {
 
     // Matter Editing State
     const [isEditingSettings, setIsEditingSettings] = useState(false);
-    const [matterSettings, setMatterSettings] = useState({ title: "", status: "active" });
+    const [matterSettings, setMatterSettings] = useState({
+        title: "",
+        status: "active",
+        matterType: "Litigation",
+        court: "Federal High Court",
+        suitNumber: ""
+    });
 
     // Document State
     const [docsList, setDocsList] = useState<any[]>([]);
+    const [docCategoryFilter, setDocCategoryFilter] = useState<'all' | 'Court Processes' | 'Exhibits'>('all');
     const [isUploading, setIsUploading] = useState(false);
     const [isEditingDoc, setIsEditingDoc] = useState<any>(null); // For active editing
     const [viewingDoc, setViewingDoc] = useState<any>(null); // Active document to view
-    const [newDoc, setNewDoc] = useState({ name: "", type: "evidence" });
+    const [newDoc, setNewDoc] = useState({ name: "", type: "Court Processes" });
     const [editDocName, setEditDocName] = useState("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -75,7 +83,7 @@ export default function MatterWorkspace() {
             await uploadDocument({
                 name: newDoc.name,
                 documentNumber: `STW-DOC-${Math.floor(Math.random() * 10000)}`,
-                category: newDoc.type,
+                category: newDoc.type === 'Exhibits' ? 'Exhibits' : 'Court Processes',
                 matterId: matter?._id || id
             }, selectedFile);
             window.location.reload();
@@ -168,7 +176,16 @@ export default function MatterWorkspace() {
         try {
             await updateMatter(matter._id || id, {
                 title: matterSettings.title,
-                status: matterSettings.status
+                status: matterSettings.status,
+                matterType: matterSettings.matterType,
+                suitNumber: matterSettings.suitNumber,
+                courtName: matterSettings.court,
+                court: {
+                    ...(matter.court || {}),
+                    name: matterSettings.court,
+                    suitNumber: matterSettings.suitNumber,
+                    caseNumber: matterSettings.suitNumber
+                }
             });
             window.location.reload();
         } catch (e) { console.error(e); }
@@ -207,10 +224,23 @@ export default function MatterWorkspace() {
             <div className="bg-[var(--primary)] text-white p-8 rounded-lg shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between md:items-end">
                 <div className="relative z-10">
                     <Link to="/internal/matters" className="text-sm text-white/70 hover:text-white mb-6 inline-flex items-center gap-2">← Back to Matters</Link>
-                    <div className="font-mono text-xs text-[var(--accent)] mb-2 uppercase tracking-widest">{matter.caseNumber || matter.matterNumber || `REF-${matter._id.slice(0, 8)}`}</div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">{matter.caseNumber || matter.matterNumber || `REF-${matter._id.slice(0, 8)}`}</span>
+                        {(matter.suitNumber || matter.court?.suitNumber || matter.court?.caseNumber) && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-amber-400/20 text-amber-200 border border-amber-400/40">
+                                ⚖️ Suit No: {matter.suitNumber || matter.court?.suitNumber || matter.court?.caseNumber}
+                            </span>
+                        )}
+                        {(matter.courtName || matter.court?.name) && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-medium bg-white/15 text-white border border-white/20">
+                                🏛️ {matter.courtName || matter.court?.name}
+                            </span>
+                        )}
+                    </div>
                     <h1 className="font-serif text-3xl font-semibold mb-3 max-w-2xl">{matter.title}</h1>
-                    <div className="flex gap-6 text-sm text-white/80 font-mono">
+                    <div className="flex flex-wrap gap-4 text-sm text-white/80 font-mono">
                         <span className="bg-white/10 px-3 py-1 rounded">Status: <strong className="uppercase text-white">{matter.status || 'Active'}</strong></span>
+                        <span className="bg-white/10 px-3 py-1 rounded">Type: <strong className="text-white">{matter.matterType || 'Litigation'}</strong></span>
                         <span className="bg-white/10 px-3 py-1 rounded">Client ID: <strong className="text-white">{matter.clientName || matter.clientId || matter.client || 'Confidential'}</strong></span>
                     </div>
                 </div>
@@ -242,7 +272,13 @@ export default function MatterWorkspace() {
                             </button>
                         )}
                         <button onClick={() => {
-                            setMatterSettings({ title: matter.title || "", status: matter.status || "active" });
+                            setMatterSettings({
+                                title: matter.title || "",
+                                status: matter.status || "active",
+                                matterType: matter.matterType || "Litigation",
+                                court: matter.courtName || matter.court?.name || "Federal High Court",
+                                suitNumber: matter.suitNumber || matter.court?.suitNumber || matter.court?.caseNumber || ""
+                            });
                             setIsEditingSettings(true);
                         }} className="px-5 py-2 bg-[var(--accent)] text-[var(--primary)] font-semibold text-sm rounded shadow-sm hover:brightness-110 transition-colors">
                             Edit Matter
@@ -316,16 +352,39 @@ export default function MatterWorkspace() {
             {/* Documents View */}
             {activeTab === 'documents' && (
                 <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-sm">
-                    <div className="flex items-center justify-between p-6 border-b border-[var(--border)]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border-b border-[var(--border)] gap-4">
                         <div>
                             <h2 className="font-serif text-xl font-semibold text-[var(--foreground)]">Vaulted Documents</h2>
-                            <p className="text-sm text-[var(--muted-foreground)] mt-1">Files tightly restricted and indexed to this workspace.</p>
+                            <p className="text-sm text-[var(--muted-foreground)] mt-1">Court Processes and Exhibits indexed to this litigation workspace.</p>
                         </div>
                         <button
                             onClick={() => setIsUploading(true)}
-                            className="px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded shadow-sm hover:brightness-110 transition-all flex items-center gap-2"
+                            className="px-4 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded shadow-sm hover:brightness-110 transition-all flex items-center gap-2 shrink-0"
                         >
                             <span className="text-lg leading-none">+</span> Upload File
+                        </button>
+                    </div>
+
+                    {/* Category Filter Tabs */}
+                    <div className="flex items-center gap-2 px-6 py-3 border-b border-[var(--border)] bg-[var(--muted)]/20 overflow-x-auto">
+                        <span className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)] mr-2 shrink-0">Category:</span>
+                        <button
+                            onClick={() => setDocCategoryFilter('all')}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shrink-0 ${docCategoryFilter === 'all' ? 'bg-[var(--primary)] text-white shadow-sm' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+                        >
+                            All ({docsList.length})
+                        </button>
+                        <button
+                            onClick={() => setDocCategoryFilter('Court Processes')}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shrink-0 ${docCategoryFilter === 'Court Processes' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+                        >
+                            ⚖️ Court Processes ({docsList.filter((d: any) => !(d.category || '').toLowerCase().includes('exhibit') && !(d.category || '').toLowerCase().includes('evidence')).length})
+                        </button>
+                        <button
+                            onClick={() => setDocCategoryFilter('Exhibits')}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors shrink-0 ${docCategoryFilter === 'Exhibits' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+                        >
+                            📎 Exhibits ({docsList.filter((d: any) => (d.category || '').toLowerCase().includes('exhibit') || (d.category || '').toLowerCase().includes('evidence')).length})
                         </button>
                     </div>
 
@@ -341,29 +400,54 @@ export default function MatterWorkspace() {
                         <div className="p-12 text-center text-[var(--muted-foreground)]">
                             No documents found in this workspace vault.
                         </div>
+                    ) : docsList
+                        .filter((d: any) => {
+                            const isExhibit = (d.category || '').toLowerCase().includes('exhibit') || (d.category || '').toLowerCase().includes('evidence');
+                            if (docCategoryFilter === 'Court Processes') return !isExhibit;
+                            if (docCategoryFilter === 'Exhibits') return isExhibit;
+                            return true;
+                        })
+                        .length === 0 ? (
+                        <div className="p-12 text-center text-[var(--muted-foreground)] text-sm">
+                            No documents matching the selected category ({docCategoryFilter}).
+                        </div>
                     ) : (
-                        docsList.map((d: any) => (
-                            <div key={d._id || d.id} className="grid grid-cols-6 text-sm p-4 border-b border-[var(--border)] items-center hover:bg-[var(--muted)]/30 transition-colors last:border-0 group">
-                                <div className="col-span-2 font-medium text-[var(--foreground)] flex items-center gap-3">
-                                    <span className="text-xl">📄</span> {d.name}
-                                </div>
-                                <div>
-                                    <span className="text-xs px-2 py-1 bg-[var(--secondary)] text-[var(--secondary-foreground)] rounded font-mono capitalize">
-                                        {d.category || 'general'}
-                                    </span>
-                                </div>
-                                <div className="font-mono text-xs text-[var(--muted-foreground)]">{d.documentNumber}</div>
-                                <div className="text-xs text-[var(--muted-foreground)]">{new Date(d.createdAt).toLocaleDateString()}</div>
-                                <div className="text-right space-x-3 text-xs flex justify-end">
-                                    <button onClick={() => setViewingDoc(d)} className="text-[var(--primary)] font-medium hover:underline">
-                                        View
-                                    </button>
-                                    <button onClick={() => { setIsEditingDoc(d); setEditDocName(d.name); }} className="text-[var(--muted-foreground)] font-medium hover:text-[var(--foreground)] hover:underline">
-                                        Edit
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                        docsList
+                            .filter((d: any) => {
+                                const isExhibit = (d.category || '').toLowerCase().includes('exhibit') || (d.category || '').toLowerCase().includes('evidence');
+                                if (docCategoryFilter === 'Court Processes') return !isExhibit;
+                                if (docCategoryFilter === 'Exhibits') return isExhibit;
+                                return true;
+                            })
+                            .map((d: any) => {
+                                const isExhibit = (d.category || '').toLowerCase().includes('exhibit') || (d.category || '').toLowerCase().includes('evidence');
+                                return (
+                                    <div key={d._id || d.id} className="grid grid-cols-6 text-sm p-4 border-b border-[var(--border)] items-center hover:bg-[var(--muted)]/30 transition-colors last:border-0 group">
+                                        <div className="col-span-2 font-medium text-[var(--foreground)] flex items-center gap-3">
+                                            <span className="text-xl">📄</span> {d.name}
+                                        </div>
+                                        <div>
+                                            <span className={`text-xs px-2.5 py-1 rounded font-semibold font-mono inline-flex items-center gap-1 ${
+                                                isExhibit
+                                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                                    : 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30'
+                                            }`}>
+                                                {isExhibit ? '📎 Exhibits' : '⚖️ Court Processes'}
+                                            </span>
+                                        </div>
+                                        <div className="font-mono text-xs text-[var(--muted-foreground)]">{d.documentNumber}</div>
+                                        <div className="text-xs text-[var(--muted-foreground)]">{new Date(d.createdAt).toLocaleDateString()}</div>
+                                        <div className="text-right space-x-3 text-xs flex justify-end">
+                                            <button onClick={() => setViewingDoc(d)} className="text-[var(--primary)] font-medium hover:underline">
+                                                View
+                                            </button>
+                                            <button onClick={() => { setIsEditingDoc(d); setEditDocName(d.name); }} className="text-[var(--muted-foreground)] font-medium hover:text-[var(--foreground)] hover:underline">
+                                                Edit
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
                     )}
                 </div>
             )}
@@ -599,13 +683,11 @@ export default function MatterWorkspace() {
                                 <input required value={newDoc.name} onChange={e => setNewDoc({ ...newDoc, name: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)]" />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Category</label>
-                                <select value={newDoc.type} onChange={e => setNewDoc({ ...newDoc, type: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)]">
-                                    <option value="pleading">Pleading</option>
-                                    <option value="evidence">Evidence</option>
-                                    <option value="correspondence">Correspondence</option>
-                                    <option value="brief">Brief</option>
-                                    <option value="other">Other</option>
+                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Document Category</label>
+                                <select value={newDoc.type} onChange={e => setNewDoc({ ...newDoc, type: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]">
+                                    {DOCUMENT_CATEGORIES.map(cat => (
+                                        <option key={cat} value={cat}>{cat === 'Court Processes' ? '⚖️ Court Processes' : '📎 Exhibits'}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="flex justify-end gap-3 pt-4">
@@ -641,25 +723,60 @@ export default function MatterWorkspace() {
             {
                 isEditingSettings && (
                     <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
-                        <div className="bg-[var(--card)] w-full max-w-sm rounded-lg shadow-xl p-6 border border-[var(--border)]">
+                        <div className="bg-[var(--card)] w-full max-w-md rounded-lg shadow-xl p-6 border border-[var(--border)]">
                             <h2 className="text-xl font-serif font-semibold mb-1 text-[var(--foreground)]">Matter Settings</h2>
-                            <p className="text-[var(--muted-foreground)] text-xs mb-4">Update the legal status and lifecycle markings of this workspace.</p>
+                            <p className="text-[var(--muted-foreground)] text-xs mb-4">Update the legal docket, court jurisdiction, and lifecycle markings of this workspace.</p>
                             <form onSubmit={handleUpdateMatterSettings} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Matter Title / Summary</label>
                                     <input required value={matterSettings.title} onChange={e => setMatterSettings({ ...matterSettings, title: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]" />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Lifecycle Status</label>
-                                    <select value={matterSettings.status} onChange={e => setMatterSettings({ ...matterSettings, status: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] capitalize text-[var(--foreground)]">
-                                        <option value="active">Active (Pending Hearing/Discovery)</option>
-                                        <option value="appealing">Appealing Judgement</option>
-                                        <option value="completed (judgement in favour)">Completed (Judgement in Favour)</option>
-                                        <option value="completed (judgement against)">Completed (Judgement Against)</option>
-                                        <option value="finished">Finished (Closed/Archived)</option>
-                                    </select>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Matter Type</label>
+                                        <select value={matterSettings.matterType} onChange={e => setMatterSettings({ ...matterSettings, matterType: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]">
+                                            <option value="Litigation">Litigation</option>
+                                            <option value="Corporate Advisory">Corporate Advisory</option>
+                                            <option value="Real Estate & Property">Real Estate & Property</option>
+                                            <option value="Regulatory Compliance">Regulatory Compliance</option>
+                                            <option value="Intellectual Property">Intellectual Property</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Lifecycle Status</label>
+                                        <select value={matterSettings.status} onChange={e => setMatterSettings({ ...matterSettings, status: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] capitalize text-[var(--foreground)]">
+                                            <option value="active">Active (Pending Hearing/Discovery)</option>
+                                            <option value="appealing">Appealing Judgement</option>
+                                            <option value="completed (judgement in favour)">Completed (Judgement in Favour)</option>
+                                            <option value="completed (judgement against)">Completed (Judgement Against)</option>
+                                            <option value="finished">Finished (Closed/Archived)</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div className="flex justify-end gap-3 pt-4">
+                                <div className="p-3 bg-[var(--muted)]/40 rounded border border-[var(--border)] space-y-3">
+                                    <div className="text-xs font-semibold uppercase tracking-wider text-[var(--foreground)] flex items-center gap-1.5">
+                                        <span>🏛️</span> Court & Litigation Details
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">The Court</label>
+                                        <select value={matterSettings.court} onChange={e => setMatterSettings({ ...matterSettings, court: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]">
+                                            {COURTS.map(c => (
+                                                <option key={c} value={c}>{c}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Suit Number</label>
+                                        <input
+                                            placeholder="e.g. FHC/ABJ/CS/104/2026"
+                                            value={matterSettings.suitNumber}
+                                            onChange={e => setMatterSettings({ ...matterSettings, suitNumber: e.target.value })}
+                                            className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] font-mono text-[var(--foreground)]"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-3 pt-2">
                                     <button type="button" onClick={() => setIsEditingSettings(false)} className="px-4 py-2 border border-[var(--border)] text-[var(--foreground)] text-sm rounded hover:bg-[var(--muted)]">Cancel</button>
                                     <button type="submit" className="px-4 py-2 bg-[var(--primary)] text-white text-sm rounded shadow-sm hover:brightness-110">Apply Changes</button>
                                 </div>

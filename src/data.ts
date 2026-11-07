@@ -1,7 +1,31 @@
 export type CaseStatus = "active" | "pending" | "closed" | "on_hold" | "archived";
 export type InvoiceStatus = "paid" | "pending" | "overdue";
 export type StaffRole = "lawyer" | "front_desk" | "exec_secretary";
-export type DocType = "pleading" | "court_order" | "brief" | "correspondence" | "evidence" | "contract";
+export const COURTS = [
+  "State High Court",
+  "Federal High Court",
+  "Court of Appeal",
+  "Supreme Court",
+] as const;
+export type CourtType = typeof COURTS[number];
+
+export const DOCUMENT_CATEGORIES = [
+  "Court Processes",
+  "Exhibits",
+] as const;
+export type DocumentCategory = typeof DOCUMENT_CATEGORIES[number];
+
+export type DocType =
+  | "Court Processes"
+  | "Exhibits"
+  | "court_processes"
+  | "exhibits"
+  | "pleading"
+  | "court_order"
+  | "brief"
+  | "correspondence"
+  | "evidence"
+  | "contract";
 export type MessageSender = "client" | "attorney";
 
 export interface StaffMember {
@@ -67,6 +91,7 @@ export interface Client {
 export interface Case {
   id: string;
   caseNumber: string;
+  suitNumber?: string;
   title: string;
   type: string;
   status: CaseStatus;
@@ -77,7 +102,7 @@ export interface Case {
   description: string;
   clientName: string;
   clientId: string;
-  court?: string;
+  court?: CourtType | string;
   claimValue?: number;
   opposingParty?: string;
   updates: CaseUpdate[];

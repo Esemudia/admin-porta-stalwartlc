@@ -15,7 +15,14 @@ export default function Matters() {
     const [isAdding, setIsAdding] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const [newMatter, setNewMatter] = useState({ title: "", clientId: "", attorney: "" });
+    const [newMatter, setNewMatter] = useState({
+        title: "",
+        clientId: "",
+        attorney: "",
+        matterType: "Litigation",
+        court: "Federal High Court",
+        suitNumber: ""
+    });
 
     useEffect(() => {
         async function loadData() {
@@ -45,6 +52,9 @@ export default function Matters() {
                 const formattedMatters = scopedMatters.map((doc: any) => ({
                     id: doc._id,
                     caseNumber: doc.matterNumber || "SLC/2026/00XX",
+                    suitNumber: doc.suitNumber || doc.court?.suitNumber || doc.court?.caseNumber || "",
+                    court: doc.courtName || doc.court?.name || "",
+                    matterType: doc.matterType || "Litigation",
                     title: doc.title,
                     clientName: c.find((client: any) => client._id === doc.clientId)?.firstName || "Unknown Client",
                     attorney: u.find((user: any) => doc.assignedLawyerIds?.includes(user._id))?.firstName || "Unassigned",
@@ -73,6 +83,14 @@ export default function Matters() {
                 title: newMatter.title,
                 clientId: newMatter.clientId,
                 matterNumber: `SLC/2026/00${casesList.length + 50}`,
+                matterType: newMatter.matterType,
+                suitNumber: newMatter.suitNumber,
+                courtName: newMatter.court,
+                court: {
+                    name: newMatter.court,
+                    suitNumber: newMatter.suitNumber,
+                    caseNumber: newMatter.suitNumber
+                },
                 assignedLawyerIds: [newMatter.attorney].filter(Boolean)
             });
             window.location.reload(); // Quick refresh to pull joined data
@@ -139,25 +157,78 @@ export default function Matters() {
 
             {isAdding && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-[var(--card)] w-full max-w-md rounded-lg shadow-xl p-6 border border-[var(--border)]">
+                    <div className="bg-[var(--card)] w-full max-w-lg rounded-lg shadow-xl p-6 border border-[var(--border)] max-h-[90vh] overflow-y-auto">
                         <h2 className="text-xl font-serif font-semibold mb-4 text-[var(--foreground)]">Create Matter</h2>
                         <form onSubmit={handleAddMatter} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Matter Title</label>
-                                <input autoFocus required value={newMatter.title} onChange={e => setNewMatter({ ...newMatter, title: e.target.value })} className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)]" />
+                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Matter Title *</label>
+                                <input autoFocus required value={newMatter.title} onChange={e => setNewMatter({ ...newMatter, title: e.target.value })} placeholder="e.g. State v. First Continental Bank" className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)]" />
                             </div>
-                            <div>
-                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Client Name</label>
-                                <select
-                                    value={newMatter.clientId}
-                                    onChange={(e) => setNewMatter({ ...newMatter, clientId: e.target.value })}
-                                    className="w-full px-3 py-2 border border-[var(--border)] rounded bg-[var(--background)] text-sm focus:outline-none focus:border-[var(--primary)]"
-                                >
-                                    {clientsList.map((c: any) => (
-                                        <option key={c._id} value={c._id}>{c.firstName} {c.lastName}</option>
-                                    ))}
-                                </select>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Practice Area / Type</label>
+                                    <select
+                                        value={newMatter.matterType}
+                                        onChange={(e) => setNewMatter({ ...newMatter, matterType: e.target.value })}
+                                        className="w-full px-3 py-2 border border-[var(--border)] rounded bg-[var(--background)] text-sm focus:outline-none focus:border-[var(--primary)]"
+                                    >
+                                        <option value="Litigation">Litigation</option>
+                                        <option value="Civil Litigation">Civil Litigation</option>
+                                        <option value="Commercial Litigation">Commercial Litigation</option>
+                                        <option value="Business & Corporate">Business & Corporate</option>
+                                        <option value="Intellectual Property">Intellectual Property</option>
+                                        <option value="Energy & Natural Resources">Energy & Natural Resources</option>
+                                        <option value="Admiralty / Maritime">Admiralty / Maritime</option>
+                                        <option value="Start-Ups">Start-Ups</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Client Name *</label>
+                                    <select
+                                        value={newMatter.clientId}
+                                        onChange={(e) => setNewMatter({ ...newMatter, clientId: e.target.value })}
+                                        className="w-full px-3 py-2 border border-[var(--border)] rounded bg-[var(--background)] text-sm focus:outline-none focus:border-[var(--primary)]"
+                                    >
+                                        {clientsList.map((c: any) => (
+                                            <option key={c._id} value={c._id}>{c.firstName} {c.lastName}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
+
+                            <div className="p-3 bg-[var(--muted)]/40 rounded-lg border border-[var(--border)] space-y-3">
+                                <div className="text-xs font-semibold text-[var(--foreground)] flex items-center gap-1.5">
+                                    <span>⚖️</span> Litigation & Court Details
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">
+                                            Suit Number {newMatter.matterType.toLowerCase().includes('litigation') ? '*' : ''}
+                                        </label>
+                                        <input
+                                            required={newMatter.matterType.toLowerCase().includes('litigation')}
+                                            value={newMatter.suitNumber}
+                                            onChange={e => setNewMatter({ ...newMatter, suitNumber: e.target.value })}
+                                            placeholder="e.g. FHC/L/CS/123/2026"
+                                            className="w-full bg-[var(--background)] border border-[var(--border)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--primary)] font-mono text-xs"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">The Court</label>
+                                        <select
+                                            value={newMatter.court}
+                                            onChange={(e) => setNewMatter({ ...newMatter, court: e.target.value })}
+                                            className="w-full px-3 py-2 border border-[var(--border)] rounded bg-[var(--background)] text-sm focus:outline-none focus:border-[var(--primary)]"
+                                        >
+                                            <option value="State High Court">State High Court</option>
+                                            <option value="Federal High Court">Federal High Court</option>
+                                            <option value="Court of Appeal">Court of Appeal</option>
+                                            <option value="Supreme Court">Supreme Court</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             {isAdmin && (
                                 <div>
                                     <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Assign Lawyer</label>
@@ -186,7 +257,7 @@ export default function Matters() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] opacity-70">🔍</span>
                     <input
                         type="text"
-                        placeholder="Search matters by ID, title, or client..."
+                        placeholder="Search matters by ID, Suit Number, Court, title, or client..."
                         className="w-full bg-[var(--card)] border border-[var(--border)] rounded-md pl-10 pr-4 py-2 text-sm outline-none focus:border-[var(--primary)] transition-colors"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
@@ -221,13 +292,27 @@ export default function Matters() {
                             return (c.title || '').toLowerCase().includes(term) ||
                                 (c.clientName || '').toLowerCase().includes(term) ||
                                 (c.caseNumber || '').toLowerCase().includes(term) ||
+                                (c.suitNumber || '').toLowerCase().includes(term) ||
+                                (c.court || '').toLowerCase().includes(term) ||
                                 (c.attorney || '').toLowerCase().includes(term);
                         })
                         .map((c: any) => (
                             <div key={c.id} className="grid grid-cols-7 text-sm p-4 border-b border-[var(--border)] items-center hover:bg-[var(--muted)]/30 transition-colors last:border-0 group">
                                 <div className="col-span-2 pr-4">
                                     <div className="font-medium text-[var(--foreground)]">{c.title}</div>
-                                    <div className="text-xs font-mono text-[var(--muted-foreground)]">{c.caseNumber}</div>
+                                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                        <span className="text-xs font-mono text-[var(--muted-foreground)]">{c.caseNumber}</span>
+                                        {c.suitNumber && (
+                                            <span className="text-[11px] font-mono font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                                Suit: {c.suitNumber}
+                                            </span>
+                                        )}
+                                        {c.court && (
+                                            <span className="text-[10px] font-medium text-[var(--muted-foreground)] bg-[var(--muted)] px-1.5 py-0.5 rounded border border-[var(--border)]">
+                                                🏛️ {c.court}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="col-span-1 text-[var(--muted-foreground)] truncate">{c.clientName}</div>
 
