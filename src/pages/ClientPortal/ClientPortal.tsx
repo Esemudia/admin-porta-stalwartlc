@@ -39,6 +39,7 @@ export default function ClientPortal() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadFile) return alert("Select file");
+    if (uploadFile.size > 20 * 1024 * 1024) return alert("File size exceeds 20MB limit.");
     setIsUploading(true);
     try {
       await uploadDocument({
@@ -161,7 +162,7 @@ export default function ClientPortal() {
                   className="w-full bg-[var(--background)] border border-[var(--border)] p-3 text-sm outline-none focus:border-[var(--primary)] text-[var(--foreground)]" />
               </div>
               <div>
-                <label className="block text-xs font-mono text-[var(--muted-foreground)] mb-2">Physical File * (PDF, DOCX)</label>
+                <label className="block text-xs font-mono text-[var(--muted-foreground)] mb-2">Physical File * (PDF, DOCX — max 20MB)</label>
                 <input type="file" onChange={e => setUploadFile(e.target.files?.[0] || null)} required
                   className="w-full border border-[var(--border)] p-2 text-sm outline-none bg-[var(--muted)] file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[var(--primary)] file:text-white" />
               </div>

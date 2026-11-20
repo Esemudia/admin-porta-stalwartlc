@@ -420,6 +420,11 @@ export default function Communications() {
         if (!files || files.length === 0) return;
 
         Array.from(files).forEach(file => {
+            if (file.size > 20 * 1024 * 1024) {
+                showToast(`File "${file.name}" exceeds the 20MB limit.`, "error");
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = () => {
                 const dataUrl = reader.result as string;
@@ -594,7 +599,14 @@ export default function Communications() {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        const newAttachments: AttachmentItem[] = Array.from(files).map(f => {
+        const oversized = Array.from(files).filter(f => f.size > 20 * 1024 * 1024);
+        if (oversized.length > 0) {
+            showToast(`${oversized.length} file(s) exceed the 20MB limit and were skipped.`, "error");
+        }
+        const validFiles = Array.from(files).filter(f => f.size <= 20 * 1024 * 1024);
+        if (validFiles.length === 0) return;
+
+        const newAttachments: AttachmentItem[] = validFiles.map(f => {
             const sizeMb = (f.size / (1024 * 1024)).toFixed(1);
             return {
                 name: f.name,

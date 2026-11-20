@@ -78,6 +78,10 @@ export default function MatterWorkspace() {
             alert("Please select a physical file.");
             return;
         }
+        if (selectedFile.size > 20 * 1024 * 1024) {
+            alert("File size exceeds 20MB limit.");
+            return;
+        }
 
         try {
             await uploadDocument({
@@ -675,7 +679,7 @@ export default function MatterWorkspace() {
                         <h2 className="text-xl font-serif font-semibold mb-4 text-[var(--foreground)]">Upload to Workspace</h2>
                         <form onSubmit={handleUpload} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Select File</label>
+                                <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Select File (max 20MB)</label>
                                 <input required type="file" onChange={e => setSelectedFile(e.target.files?.[0] || null)} className="w-full text-sm outline-none file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary)] file:text-white hover:file:brightness-110" />
                             </div>
                             <div>

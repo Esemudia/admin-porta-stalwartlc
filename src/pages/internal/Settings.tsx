@@ -170,8 +170,8 @@ export default function Settings() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) {
-            showToast("Profile image must be less than 5MB.", "error");
+        if (file.size > 20 * 1024 * 1024) {
+            showToast("Profile image must be less than 20MB.", "error");
             return;
         }
 
@@ -188,6 +188,11 @@ export default function Settings() {
     const handleFirmLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (file.size > 20 * 1024 * 1024) {
+            showToast("Firm logo must be less than 20MB.", "error");
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = (event) => {
