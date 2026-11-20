@@ -217,6 +217,9 @@ export async function deleteUser(id: string) {
 }
 
 export async function uploadDocument(data: any, file: File) {
+    if (file && file.size > 20 * 1024 * 1024) {
+        throw new Error('File size exceeds the 20MB limit.');
+    }
     const session = getSession();
     const formData = new FormData();
     formData.append('file', file);

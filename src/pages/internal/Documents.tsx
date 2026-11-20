@@ -66,6 +66,10 @@ export default function Documents() {
             setUploadError("Please select a physical file to upload.");
             return;
         }
+        if (selectedFile.size > 20 * 1024 * 1024) {
+            setUploadError("File size exceeds 20MB limit.");
+            return;
+        }
         if (!newDoc.caseId) {
             setUploadError("Please select a valid matter for this document.");
             return;
@@ -181,7 +185,7 @@ export default function Documents() {
                         <form onSubmit={handleUpload} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
-                                    Select File (.pdf, .docx, .doc, images)*
+                                    Select File (.pdf, .docx, .doc, images — max 20MB)*
                                 </label>
                                 <input
                                     required
